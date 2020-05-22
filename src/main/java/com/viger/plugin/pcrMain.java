@@ -62,7 +62,9 @@ class pcrMain extends PluginBase {
                     count = 0;
                     totalDamage = 0;
                     for(records tempRecords: records.get(member)){
-                        if (tempRecords.getDate() == new Date().getDate()){
+                        this.getLogger().debug(String.valueOf(tempRecords.getDate()));
+                        this.getLogger().debug(String.valueOf(new Date().getDay()));
+                        if (tempRecords.getDate() == new Date().getDay()){
                             if(!tempRecords.isFinal()){
                                 count += 1;
                             }
@@ -90,11 +92,11 @@ class pcrMain extends PluginBase {
                 }
                 switch (list.get(0)){
                     case "remove":
-                        if(list.size() < 3){
+                        if(list.size() < 2){
                             commandSender.sendMessageBlocking("/member remove ³ÉÔ±qq ");
                             return true;
                         }
-                        long qq = Long.getLong(list.get(1).trim());
+                        long qq = Long.parseLong(list.get(1).trim());
                         try {
                             for (Member member : records.keySet()) {
                                 if (member.getId() == qq) {
