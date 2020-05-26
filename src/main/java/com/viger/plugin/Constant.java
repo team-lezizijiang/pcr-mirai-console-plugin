@@ -27,7 +27,7 @@ public class Constant {
             "\t3. 抽 n 发 [#(up) 抽卡 n]\n" +
             "\t4. 生成 excel 统计表格 [生成 excel (时间)](待加入)\n" +
             "\t\t 时间参数与上面相同 \n" +
-            "\t5. 在一个群里关闭 / 开启提醒买药小助手 [# 关闭 / 开启提醒买药小助手](待加入)\n" +
+            "\t5. 在一个群里关闭 / 开启提醒买药小助手 [/reminder enable/disable]\n" +
             "\t6. 删除不需要记录的成员信息 [/member remove QQ号]\n" +
             "\t7. 查看当前正在记录的成员信息 [/member list]\n" +
             " 默认设定：\n" +

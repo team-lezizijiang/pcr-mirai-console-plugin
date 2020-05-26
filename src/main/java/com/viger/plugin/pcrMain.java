@@ -8,9 +8,11 @@ import net.mamoe.mirai.console.plugins.PluginBase;
 import net.mamoe.mirai.contact.Member;
 import net.mamoe.mirai.message.GroupMessage;
 import net.mamoe.mirai.message.data.At;
+import net.mamoe.mirai.message.data.Image;
 import net.mamoe.mirai.message.data.MessageChainBuilder;
 import org.jetbrains.annotations.NotNull;
 
+import java.io.File;
 import java.sql.*;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
@@ -28,6 +30,8 @@ class pcrMain extends PluginBase {
     private Config settings;
     private HashSet<Member> memberList;
     private boolean enabled;
+    private boolean Reminder;
+    private Image imgReminder;
     private Connection con;
     private static HashMap<String, String> coolDown; //抽卡冷却时间
 
@@ -37,6 +41,7 @@ class pcrMain extends PluginBase {
         this.settings = this.loadConfig("settings.yaml");
         memberList = new HashSet<>();
         this.settings.setIfAbsent("Enabled", Boolean.FALSE);
+        this.settings.setIfAbsent("Reminder", Boolean.TRUE);
         this.settings.setIfAbsent("DBUsername", "null");
         this.settings.setIfAbsent("DBPassword", "null");
         String username = this.settings.getString("DBUsername");
@@ -258,8 +263,46 @@ class pcrMain extends PluginBase {
             }
         });
 
+        JCommandManager.getInstance().register(this, new BlockingCommand(
+                "reminder", new ArrayList<>(), " 开关买药提醒 ", "/reminder [enable/disable]"
+        ) {
+            @Override
+            public boolean onCommandBlocking(@NotNull CommandSender commandSender, @NotNull List<String> list) {
+                if (list.size() < 1) {
+                    return false;
+                }
+                if ("enable".equals(list.get(0))) {
+                    if (list.size() > 3) {
+                        commandSender.sendMessageBlocking("/reminder [enable/disable]");
+                        return false;
+                    }
+                    settings.set("Reminder", Boolean.TRUE);
+                    settings.save();
+                    try {
+                        imgReminder = ((Member) memberList.toArray()[0]).getGroup().uploadImage(new File("./plugins/test/reminder.jpg"));
+                        ((Member) memberList.toArray()[0]).getGroup().sendMessageAsync(imgReminder);
+                        commandSender.sendMessageBlocking(" 开启成功 ");
+                        return true;
+                    } catch (Exception e) {
+                        commandSender.sendMessageBlocking(" 开启失败. 请检查图片是否在正确路径下?");
+                        getLogger().error(e);
+                        settings.set("Reminder", Boolean.FALSE);
+                        settings.save();
+                        return false;
+                    }
+                    // 移除记录错误的记录
+                } else if ("disable".equals(list.get(0))) {
+                    settings.set("Reminder", Boolean.FALSE);
+                    settings.save();
+                    return true;
+                } else {
+                    return false;
+                }
+            }
+        });
+
         getScheduler().repeat(() -> {
-            if (new Date().getHours() == 23 && new Date().getMinutes() == 59 && this.enabled) {
+            if (new Date().getHours() == 2 && new Date().getMinutes() == 0 && this.enabled) {
                 LinkedList<Member> loudao = query();
                 MessageChainBuilder message = new MessageChainBuilder();
                 message.add("牙白德斯内,今天");
@@ -270,8 +313,14 @@ class pcrMain extends PluginBase {
                 message.add("还没有出满三刀,请接受制裁~~~");
                 ((Member) memberList.toArray()[0]).getGroup().sendMessageAsync(message.asMessageChain());
             }
+            if ((new Date().getHours() == 6 || new Date().getHours() == 0 || new Date().getHours() == 12 || new Date().getHours() == 18) && new Date().getMinutes() == 0 && this.Reminder) {
+                if (imgReminder == null) {
+                    imgReminder = ((Member) memberList.toArray()[0]).getGroup().uploadImage(new File("./test/reminder.jpg"));
+                }
+                ((Member) memberList.toArray()[0]).getGroup().sendMessageAsync(imgReminder);
+            }
             this.getLogger().debug("checking time");
-        }, 60000); // 使用最笨的方法实现自动查刀
+        }, 60000); // 使用最笨的方法实现自动查刀, 买药提醒
 
 
         this.getLogger().info("Plugin loaded!");
@@ -452,6 +501,5 @@ class pcrMain extends PluginBase {
         return loudao;
     }
 }
-// TODO: add timer (定时查刀, 提醒买药小助手(pic))
 // TODO: 加入简单阵容记录(pic)
 // todo: 使用excel或网页展示统计数据
