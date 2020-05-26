@@ -63,7 +63,7 @@ class pcrMain extends PluginBase {
             String messageInString = event.getMessage().contentToString();
             Member sender = event.getSender();
 
-            if (messageInString.contains("开始记刀")) {
+            if (messageInString.contains("开始记刀") || this.enabled) {
                 this.getLogger().info("开始记刀");
                 this.settings.set("Enabled", Boolean.TRUE);
                 this.enabled = true;
@@ -93,7 +93,7 @@ class pcrMain extends PluginBase {
                         PreparedStatement sql = con.prepareStatement("insert into records values (?,?,?,?)");
                         sql.setLong(3, damage);
                         sql.setBoolean(2, isFinal);
-                        sql.setInt(4, new Date().getDay());
+                        sql.setInt(4, new Date().getHours() > 5 ? new Date().getDay() : new Date().getDay() - 1);
                         sql.setLong(1, event.getSender().getId());
                         sql.executeUpdate();
                         event.getSubject().sendMessage("记刀成功");
@@ -110,56 +110,7 @@ class pcrMain extends PluginBase {
 
             if (messageInString.contains("查刀")) {
                 event.getSubject().sendMessage("开始查今天的出刀情况");
-                getScheduler().async(() -> {
-                    long totalDamage;
-                    LinkedList<Member> loudao = new LinkedList<>();
-                    int count;
-                    for (Member member : memberList) {
-                        count = 0;
-                        totalDamage = 0;
-                        try {
-                            PreparedStatement sql;
-                            sql = con.prepareStatement("select sum(damage) from records where memberID=? and date=?");
-                            sql.setInt(2, new Date().getDay());
-                            sql.setLong(1, member.getId());
-                            ResultSet rs = sql.executeQuery();
-                            this.getLogger().info("查询数据库...");
-                            rs.next();
-                            totalDamage = rs.getLong(1);
-                            sql = con.prepareStatement(
-                                    "select count(damage) from records where memberID=? and isFinal=? and date=?");
-                            sql.setInt(3, new Date().getDay());
-                            sql.setLong(1, member.getId());
-                            sql.setBoolean(2, false);//
-                            rs = sql.executeQuery();
-                            rs.next();
-                            count = rs.getInt(1);
-                            this.getLogger().info("查询完成");
-
-                        } catch (SQLException e) {
-                            e.printStackTrace();
-                            this.getLogger().info("查询失败");
-                        }
-                        if (count < 3) {
-                            loudao.add(member);
-                        }
-                        event.getSubject().sendMessageAsync("今天" + member.getNick() + "共出" + count + "刀, " + "造成" + totalDamage + "点伤害;");
-                    }
-
-                    MessageChainBuilder message = new MessageChainBuilder();
-                    message.add("牙白德斯内,今天");
-                    for (Member nmsl : loudao) {
-                        message.add(new At(nmsl));
-                        message.append(", ");
-                    }
-                    message.append("还没有出满三道,请接受制裁~~~");
-                    event.getSubject().sendMessage(message.toString());
-                }); // 揪出漏刀的小朋友
-
-
-                // 查询一天的记录情况并发送提醒
-
-
+                getScheduler().async((Runnable) this::query); // 揪出漏刀的小朋友
             } // 查看当天出刀情况
         });
 
@@ -174,7 +125,7 @@ class pcrMain extends PluginBase {
                     reFlashCoolDown(sender.getId());
                 } else {
                     //发送冷却提示消息
-                    event.getSubject().sendMessage(new At(sender).plus("抽卡抽的那么快，人家会受不了的"));
+                    event.getSubject().sendMessage(new At(sender).plus("还抽?还有钻吗?给你两分钟去氪一单"));
                 }
             } else if (messageInString.contains("#十连")) {
                 if (isCool(sender.getId())) {
@@ -248,7 +199,7 @@ class pcrMain extends PluginBase {
                 }
                 switch (list.get(0)) {
                     case "remove":
-                        if (list.size() < 2) {
+                        if (list.size() < 1) {
                             commandSender.sendMessageBlocking("/member remove 成员qq ");
                             return true;
                         }
@@ -306,6 +257,23 @@ class pcrMain extends PluginBase {
                 return true;
             }
         });
+
+        getScheduler().repeat(() -> {
+            if (new Date().getHours() == 23 && new Date().getMinutes() == 59 && this.enabled) {
+                LinkedList<Member> loudao = query();
+                MessageChainBuilder message = new MessageChainBuilder();
+                message.add("牙白德斯内,今天");
+                for (Member nmsl : loudao) {
+                    message.add(new At(nmsl));
+                    message.add(", ");
+                }
+                message.add("还没有出满三刀,请接受制裁~~~");
+                ((Member) memberList.toArray()[0]).getGroup().sendMessageAsync(message.asMessageChain());
+            }
+            this.getLogger().debug("checking time");
+        }, 60000); // 使用最笨的方法实现自动查刀
+
+
         this.getLogger().info("Plugin loaded!");
     }
 
@@ -313,13 +281,9 @@ class pcrMain extends PluginBase {
     /**
      * up池的概率
      *
-     * @param num
-     * @return
      */
-    public Gashapon dp_Gashapon(int num, boolean isUp) {
-        if (isUp) {
 
-        }
+    public Gashapon dp_Gashapon(int num, boolean isUp) {
         Random random = new Random();
         random.setSeed(new Date().getTime());
         int on = 0, tw = 0, thre = 0; // 抽出来的三星二星有几个
@@ -353,7 +317,7 @@ class pcrMain extends PluginBase {
             if (q < 7 && isUp) {//抽不抽的出来亚里沙
                 map1.merge(Three_plus[random.nextInt(Three_plus.length)], 1, Integer::sum);
             } else {
-                map1.merge(noUpThree[random.nextInt(Three.length)], 1, Integer::sum);
+                map1.merge(noUpThree[random.nextInt(noUpThree.length)], 1, Integer::sum);
             }
         }
         for (int i = 0; i < tw; i++) {
@@ -381,10 +345,10 @@ class pcrMain extends PluginBase {
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append("一共抽出了");
         if (thre != 0) {
-            stringBuilder.append(thre).append("个三星");
+            stringBuilder.append(thre).append("个三星;");
         }
         if (tw != 0) {
-            stringBuilder.append(tw).append("个二星");
+            stringBuilder.append(tw).append("个二星;");
         }
         if (on != 0) {
             stringBuilder.append(on).append("个一星");
@@ -448,6 +412,44 @@ class pcrMain extends PluginBase {
                 return true;
             }
         }
+    }
+
+    public LinkedList<Member> query() {
+        long totalDamage;
+        LinkedList<Member> loudao = new LinkedList<>();
+        int count;
+        for (Member member : memberList) {
+            count = 0;
+            totalDamage = 0;
+            try {
+                PreparedStatement sql;
+                sql = con.prepareStatement("select sum(damage) from records where memberID=? and date=?");
+                sql.setInt(2, new Date().getDay());
+                sql.setLong(1, member.getId());
+                ResultSet rs = sql.executeQuery();
+                this.getLogger().info("查询数据库...");
+                rs.next();
+                totalDamage = rs.getLong(1);
+                sql = con.prepareStatement(
+                        "select count(damage) from records where memberID=? and isFinal=? and date=?");
+                sql.setInt(3, new Date().getHours() > 5 ? new Date().getDay() : new Date().getDay() - 1);
+                sql.setLong(1, member.getId());
+                sql.setBoolean(2, false);//
+                rs = sql.executeQuery();
+                rs.next();
+                count = rs.getInt(1);
+                member.getGroup().sendMessageAsync("今天" + member.getNick() + "共出" + count + "刀, " + "造成" + totalDamage + "点伤害;");
+                this.getLogger().info("查询完成");
+
+            } catch (SQLException e) {
+                e.printStackTrace();
+                this.getLogger().info("查询失败");
+            }
+            if (count < 3) {
+                loudao.add(member);
+            }
+        }
+        return loudao;
     }
 }
 // TODO: add timer (定时查刀, 提醒买药小助手(pic))
