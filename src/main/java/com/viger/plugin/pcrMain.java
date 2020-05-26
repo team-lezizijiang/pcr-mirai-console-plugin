@@ -47,6 +47,7 @@ class pcrMain extends PluginBase {
         String username = this.settings.getString("DBUsername");
         String password = this.settings.getString("DBPassword");
         this.enabled = this.settings.getBoolean("Enabled");
+        this.Reminder = this.settings.getBoolean("Reminder");
         this.settings.save();
         if (settings.getString("DBUsername").equals("null")) {
             return;
@@ -277,6 +278,7 @@ class pcrMain extends PluginBase {
                         return false;
                     }
                     settings.set("Reminder", Boolean.TRUE);
+                    Reminder = true;
                     settings.save();
                     try {
                         imgReminder = ((Member) memberList.toArray()[0]).getGroup().uploadImage(new File("./plugins/test/reminder.jpg"));
@@ -287,12 +289,14 @@ class pcrMain extends PluginBase {
                         commandSender.sendMessageBlocking(" 开启失败. 请检查图片是否在正确路径下?");
                         getLogger().error(e);
                         settings.set("Reminder", Boolean.FALSE);
+                        Reminder = false;
                         settings.save();
                         return false;
                     }
                     // 移除记录错误的记录
                 } else if ("disable".equals(list.get(0))) {
                     settings.set("Reminder", Boolean.FALSE);
+                    Reminder = false;
                     settings.save();
                     return true;
                 } else {
@@ -320,7 +324,7 @@ class pcrMain extends PluginBase {
                 ((Member) memberList.toArray()[0]).getGroup().sendMessageAsync(imgReminder);
             }
             this.getLogger().debug("checking time");
-        }, 60000); // 使用最笨的方法实现自动查刀, 买药提醒
+        }, 600000); // 使用最笨的方法实现自动查刀, 买药提醒
 
 
         this.getLogger().info("Plugin loaded!");
@@ -363,7 +367,7 @@ class pcrMain extends PluginBase {
 
         for (int i = 0; i < thre; i++) {
             int q = random.nextInt(25);
-            if (q < 7 && isUp) {//抽不抽的出来亚里沙
+            if (q < 7 && isUp) {//抽不抽的出来UP
                 map1.merge(Three_plus[random.nextInt(Three_plus.length)], 1, Integer::sum);
             } else {
                 map1.merge(noUpThree[random.nextInt(noUpThree.length)], 1, Integer::sum);
