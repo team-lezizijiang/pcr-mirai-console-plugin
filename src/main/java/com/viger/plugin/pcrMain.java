@@ -124,7 +124,7 @@ class pcrMain extends PluginBase {
                         if (member.getId() == qq || member.getNameCard().equals(nick)) {
                             temp = member;
                             qq = member.getId();
-                            nick = temp.getNameCard();
+                            nick = (member.getNameCard().equals("") ? member.getNick() : member.getNameCard());
                         }
                     }
                     int count = 0;
@@ -152,10 +152,14 @@ class pcrMain extends PluginBase {
                     } catch (SQLException e) {
                         e.printStackTrace();
                         event.getSubject().sendMessage("查询失败");
-                    }
+                    }  // 查询单人单日记录
                 } else {
-                    event.getSubject().sendMessage("开始查今天的出刀情况");
-                    getScheduler().async((Runnable) this::query); // 揪出漏刀的小朋友
+                    if (sender.getPermission().getLevel() > 0) {
+                        event.getSubject().sendMessage("开始查今天的出刀情况");
+                        getScheduler().async((Runnable) this::query); // 揪出漏刀的小朋友
+                    } else {
+                        event.getSubject().sendMessage(("该指令为管理员专用的哦~")); // 防止刷屏
+                    }
                 }
 
             } // 查看当天出刀情况
@@ -378,7 +382,9 @@ class pcrMain extends PluginBase {
         this.enabled = true;
         this.settings.save();
         for (Member i : event.getGroup().getMembers()) {
-            memberList.add(i);
+            if (i != null) {
+                memberList.add(i);
+            }
         }
     }
 
@@ -522,6 +528,7 @@ class pcrMain extends PluginBase {
         long totalDamage;
         LinkedList<Member> loudao = new LinkedList<>();
         int count;
+        MessageChainBuilder msg = new MessageChainBuilder();
         for (Member member : memberList) {
             count = 0;
             totalDamage = 0;
@@ -542,7 +549,7 @@ class pcrMain extends PluginBase {
                 rs = sql.executeQuery();
                 rs.next();
                 count = rs.getInt(1);
-                member.getGroup().sendMessage("今天" + member.getNameCard() + "共出" + count + "刀, " + "造成" + totalDamage + "点伤害;");
+                msg.add("今天" + (member.getNameCard().equals("") ? member.getNick() : member.getNameCard()) + "共出" + count + "刀, " + "造成" + totalDamage + "点伤害;\n");
                 this.getLogger().info("查询完成");
 
             } catch (SQLException e) {
@@ -553,6 +560,7 @@ class pcrMain extends PluginBase {
                 loudao.add(member);
             }
         }
+        ((Member) memberList.toArray()[0]).getGroup().sendMessage(msg.asMessageChain());
         return loudao;
     }
 }
