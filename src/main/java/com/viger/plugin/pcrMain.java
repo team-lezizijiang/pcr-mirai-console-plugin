@@ -46,7 +46,7 @@ class pcrMain extends PluginBase {
         this.settings.setIfAbsent("DBPassword", "null");
         String username = this.settings.getString("DBUsername");
         String password = this.settings.getString("DBPassword");
-        this.enabled = this.settings.getBoolean("Enabled");
+        this.enabled = false;
         this.Reminder = this.settings.getBoolean("Reminder");
         this.settings.save();
         if (settings.getString("DBUsername").equals("null")) {
@@ -69,24 +69,19 @@ class pcrMain extends PluginBase {
             String messageInString = event.getMessage().contentToString();
             Member sender = event.getSender();
 
-            if (messageInString.contains("开始记刀") || this.enabled) {
-                this.getLogger().info("开始记刀");
-                this.settings.set("Enabled", Boolean.TRUE);
-                this.enabled = true;
-                this.settings.save();
-                for (Member i : event.getGroup().getMembers()) {
-                    memberList.add(i);
-                }
+            if (messageInString.contains("#开始记刀") || (!enabled && settings.getBoolean("Enabled"))) {
+                jidaoStart(event);
+                event.getSubject().sendMessage("开始记刀");
             } // 开始记刀时,根据群员列表建立记录表
-            else if (messageInString.contains("结束记刀")) {
-                this.getLogger().info("结束记刀");
-                this.settings.set("Enabled", Boolean.FALSE);
-                this.enabled = false;
-                this.settings.save();
+            else if (messageInString.contains("#结束记刀")) {
+                event.getSubject().sendMessage("结束记刀");
+                settings.set("Enabled", Boolean.FALSE);
+                enabled = false;
+                settings.save();
             } // 结束记刀
 
-            else if (messageInString.contains("记刀 ")) {
-                if (this.enabled) {
+            else if (messageInString.contains("#记刀 ")) {
+                if (enabled) {
                     try {
                         boolean isFinal = false;
 
@@ -94,7 +89,7 @@ class pcrMain extends PluginBase {
                             isFinal = true;
                             messageInString = messageInString.replace("尾刀 ", "");
                         }
-                        messageInString = messageInString.replace("记刀 ", "");
+                        messageInString = messageInString.replace("#记刀 ", "");
                         long damage = Long.parseLong((messageInString));
                         PreparedStatement sql = con.prepareStatement("insert into records values (?,?,?,?)");
                         sql.setLong(3, damage);
@@ -110,20 +105,66 @@ class pcrMain extends PluginBase {
                 }
             } //记刀,内容包括伤害 时间 是否尾刀
 
-            else if (messageInString.contains("#帮助")) {
+            if (messageInString.contains("#帮助")) {
                 event.getSubject().sendMessage(helpMsg);
             } // 显示帮助信息
 
-            if (messageInString.contains("查刀")) {
-                event.getSubject().sendMessage("开始查今天的出刀情况");
-                getScheduler().async((Runnable) this::query); // 揪出漏刀的小朋友
+            if (messageInString.contains("#查刀")) {
+                if (messageInString.contains("#查刀 ")) {
+                    messageInString = messageInString.replace("#查刀 ", "");
+                    long qq = 0;
+                    String nick = null;
+                    Member temp = null;
+                    try {
+                        qq = Long.parseLong(messageInString);
+                    } catch (Exception e) {
+                        nick = messageInString;
+                    }
+                    for (Member member : memberList) {
+                        if (member.getId() == qq || member.getNameCard().equals(nick)) {
+                            temp = member;
+                            qq = member.getId();
+                            nick = temp.getNameCard();
+                        }
+                    }
+                    int count = 0;
+                    long totalDamage;
+                    try {
+                        PreparedStatement sql;
+                        sql = con.prepareStatement("select sum(damage) from records where memberID=? and date=?");
+                        sql.setInt(2, new Date().getDay());
+                        sql.setLong(1, qq);
+                        ResultSet rs = sql.executeQuery();
+                        this.getLogger().info("查询数据库...");
+                        rs.next();
+                        totalDamage = rs.getLong(1);
+                        sql = con.prepareStatement(
+                                "select count(damage) from records where memberID=? and isFinal=? and date=?");
+                        sql.setInt(3, new Date().getHours() > 5 ? new Date().getDay() : new Date().getDay() - 1);
+                        sql.setLong(1, qq);
+                        sql.setBoolean(2, false);//
+                        rs = sql.executeQuery();
+                        rs.next();
+                        count = rs.getInt(1);
+
+                        assert temp != null;
+                        event.getGroup().sendMessage("今天" + temp.getNameCard() + "共出" + count + "刀, " + "造成" + totalDamage + "点伤害;");
+                    } catch (SQLException e) {
+                        e.printStackTrace();
+                        event.getSubject().sendMessage("查询失败");
+                    }
+                } else {
+                    event.getSubject().sendMessage("开始查今天的出刀情况");
+                    getScheduler().async((Runnable) this::query); // 揪出漏刀的小朋友
+                }
+
             } // 查看当天出刀情况
         });
 
         this.getEventListener().subscribeAlways(GroupMessage.class, (GroupMessage event) -> {
             String messageInString = event.getMessage().contentToString();
             Member sender = event.getSender();
-            this.getLogger().info(sender.getNick() + ':' + messageInString);
+            this.getLogger().info(sender.getNameCard() + ':' + messageInString);
             if (messageInString.contains("#up十连")) {
                 if (isCool(sender.getId())) {
                     Gashapon gashapon = dp_Gashapon(10, true);
@@ -223,7 +264,7 @@ class pcrMain extends PluginBase {
 
                     case "list":
                         for (Member member : memberList) {
-                            commandSender.sendMessageBlocking(member.getNick());
+                            commandSender.sendMessageBlocking(member.getNameCard());
                         }
                         break; // 查看当前记刀的成员
                     default:
@@ -317,23 +358,33 @@ class pcrMain extends PluginBase {
                 message.add("还没有出满三刀,请接受制裁~~~");
                 ((Member) memberList.toArray()[0]).getGroup().sendMessageAsync(message.asMessageChain());
             }
-            if ((new Date().getHours() == 6 || new Date().getHours() == 0 || new Date().getHours() == 12 || new Date().getHours() == 18) && new Date().getMinutes() == 0 && this.Reminder) {
+            if ((new Date().getHours() == 6 || new Date().getHours() == 0 || new Date().getHours() == 12 || new Date().getHours() == 18) && new Date().getMinutes() == 0 && Reminder) {
                 if (imgReminder == null) {
                     imgReminder = ((Member) memberList.toArray()[0]).getGroup().uploadImage(new File("./test/reminder.jpg"));
                 }
                 ((Member) memberList.toArray()[0]).getGroup().sendMessageAsync(imgReminder);
             }
             this.getLogger().debug("checking time");
-        }, 600000); // 使用最笨的方法实现自动查刀, 买药提醒
+        }, 60000); // 使用最笨的方法实现自动查刀, 买药提醒
 
 
         this.getLogger().info("Plugin loaded!");
     }
 
+    private void jidaoStart(GroupMessage event) {
+        this.getLogger().info("开始记刀");
+        this.getLogger().debug(enabled + " " + this.settings.getBoolean("Enabled"));
+        this.settings.set("Enabled", Boolean.TRUE);
+        this.enabled = true;
+        this.settings.save();
+        for (Member i : event.getGroup().getMembers()) {
+            memberList.add(i);
+        }
+    }
+
 
     /**
      * up池的概率
-     *
      */
 
     public Gashapon dp_Gashapon(int num, boolean isUp) {
@@ -491,7 +542,7 @@ class pcrMain extends PluginBase {
                 rs = sql.executeQuery();
                 rs.next();
                 count = rs.getInt(1);
-                member.getGroup().sendMessageAsync("今天" + member.getNick() + "共出" + count + "刀, " + "造成" + totalDamage + "点伤害;");
+                member.getGroup().sendMessage("今天" + member.getNameCard() + "共出" + count + "刀, " + "造成" + totalDamage + "点伤害;");
                 this.getLogger().info("查询完成");
 
             } catch (SQLException e) {
