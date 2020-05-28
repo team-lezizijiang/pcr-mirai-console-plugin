@@ -2,12 +2,14 @@ package com.viger.plugin;
 
 public class Constant {
     public static final String[] one = {" 日和莉 ", " 怜 ", " 未奏希 ", " 胡桃 ", " 依里 ", " 由加莉 ", " 铃莓 ", " 碧 ", " 美咲 ", " 莉玛 "};
+    public static final String[] noUpOne = {" 日和莉 ", " 怜 ", " 未奏希 ", " 依里 ", " 由加莉 ", " 碧 ", " 美咲 ", " 莉玛 "};
     public static final String[] two = {" 茜里 ", " 宫子 ", " 雪 ", " 铃奈 ", " 香织 ", " 美美 ", " 惠理子 ", " 忍 ", " 真阳 ", " 栞 ", " 千歌 ", " 空花 ", " 珠希 ", " 美冬 ", " 深月 ", " 铃 "};
-    public static final String[] Three = {" 杏奈 ", " 真步 ", " 璃乃 ", " 初音 ", " 依绪 ", " 咲恋 ", " 望 ", " 妮胧 ", " 秋乃 ", " 真琴 ", " 静流 ", " 莫妮卡 ", " 姬塔 ", " 纯 ", " 亚里莎 "};
-    public static final String[] noUpThree = {" 杏奈 ", " 真步 ", " 璃乃 ", " 初音 ", " 依绪 ", " 咲恋 ", " 望 ", " 妮胧 ", " 秋乃 ", " 真琴 ", " 静流 ", " 莫妮卡 ", " 姬塔 ", " 纯 "};
-    public static final String[] Three_plus = {" 镜华 "};
-    public static final String[] two_plus = {" 真阳 ", " 栞 ", " 香织 ", " 铃 "};
-    public static final String[] one_plus = {" 莉玛 "};
+    public static final String[] noUpTwo = {" 茜里 ", " 宫子 ", " 雪 ", " 铃奈 ", " 香织 ", " 美美 ", " 惠理子 ", " 忍 ", " 真阳 ", " 栞 ", " 千歌 ", " 空花 ", " 珠希 ", " 美冬 ", " 深月 ", " 铃 "};
+    public static final String[] Three = {" 杏奈 ", " 真步 ", " 璃乃 ", " 初音 ", " 依绪 ", " 咲恋 ", " 望 ", " 妮侬 ", " 秋乃 ", " 真琴 ", " 静流 ", " 莫妮卡 ", " 姬塔 ", " 纯 ", " 亚里莎 "};
+    public static final String[] noUpThree = {" 亚莉莎 ", " 杏奈 ", " 真步 ", " 璃乃 ", " 初音 ", " 依绪 ", " 望 ", " 妮侬 ", " 秋乃 ", " 真琴 ", " 静流 ", " 莫妮卡 ", " 姬塔 ", " 纯 "};
+    public static final String[] Three_plus = {" 咲恋 "};
+    public static final String[] two_plus = {" 绫音 "};
+    public static final String[] one_plus = {" 胡桃 ", " 铃莓 "};
     public static final String helpMsg = " 命令总览：\n" +
             " 打 / 为管理员指令\n" +
             " 工会战命令:\n" +

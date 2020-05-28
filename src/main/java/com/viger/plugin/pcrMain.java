@@ -34,7 +34,7 @@ class pcrMain extends PluginBase {
             11413446L, // 哈特度
             2855958676L, // 群主宝宝妈妈爱你
             2371617404L};// 预定义的排除列表
-    private static String[] one, two, three, noUpThree, one_plus, two_plus, three_plus;
+    private static String[] one, two, three, noUpThree, one_plus, two_plus, three_plus, noUpTwo, noUpOne;
     private Config settings; // 配置文件
     private HashSet<Member> memberList; // 记刀的成员列表
     private boolean enabled; // 团队战开关
@@ -55,16 +55,22 @@ class pcrMain extends PluginBase {
         this.settings.setIfAbsent("two_plus", Constant.two_plus);
         this.settings.setIfAbsent("three_plus", Constant.Three_plus);
         this.settings.setIfAbsent("noUpThree", Constant.noUpThree);
+        this.settings.setIfAbsent("noUpOne", Constant.noUpOne);
+        this.settings.setIfAbsent("noUpTwo", Constant.noUpTwo);
         this.settings.setIfAbsent("QqExclude", QqExclude);
         this.settings.setIfAbsent("Reminder", Boolean.TRUE);
         this.settings.setIfAbsent("DBUsername", "null");
-        this.settings.setIfAbsent("DBPassword", "null"); // 写入默认值
+        this.settings.setIfAbsent("DBPassword", "null");
+        this.settings.save();
+        this.settings.setIfAbsent("one", Constant.one); // 写入默认值
 
 
         one = this.settings.getStringList("one").toArray(new String[0]);
         two = this.settings.getStringList("two").toArray(new String[0]);
         three = this.settings.getStringList("three").toArray(new String[0]);
         noUpThree = this.settings.getStringList("noUpThree").toArray(new String[0]);
+        noUpTwo = this.settings.getStringList("noUpTwo").toArray(new String[0]);
+        noUpOne = this.settings.getStringList("noUpOne").toArray(new String[0]);
         three_plus = this.settings.getStringList("three_plus").toArray(new String[0]);
         two_plus = this.settings.getStringList("two_plus").toArray(new String[0]);
         one_plus = this.settings.getStringList("one_plus").toArray(new String[0]);
@@ -181,7 +187,7 @@ class pcrMain extends PluginBase {
                     reFlashCoolDown(sender.getId());
                 } else {
                     //发送冷却提示消息
-                    event.getSubject().sendMessage(new At(sender).plus("还抽?还有钻吗?给你两分钟去氪一单"));
+                    event.getSubject().sendMessageAsync(new At(sender).plus("还抽?还有钻吗?给你两分钟去氪一单"));
                 }
             } else if (messageInString.contains("#十连")) {
                 if (isCool(sender.getId())) {
@@ -190,7 +196,7 @@ class pcrMain extends PluginBase {
                     reFlashCoolDown(sender.getId());
                 } else {
                     //发送冷却提示消息
-                    event.getSubject().sendMessage(new At(sender).plus("抽卡抽的那么快，人家会受不了的"));
+                    event.getSubject().sendMessageAsync(new At(sender).plus("抽卡抽的那么快，人家会受不了的"));
                 }
             } else if (messageInString.contains("#井")) {
                 if (isCool(sender.getId())) {
@@ -199,7 +205,7 @@ class pcrMain extends PluginBase {
                     reFlashCoolDown(sender.getId());
                 } else {
                     //发送冷却提示消息
-                    event.getSubject().sendMessage(new At(sender).plus("抽卡抽的那么快，人家会受不了的"));
+                    event.getSubject().sendMessageAsync(new At(sender).plus("抽卡抽的那么快，人家会受不了的"));
                 }
             } else if (messageInString.contains("#up井")) {
                 if (isCool(sender.getId())) {
@@ -208,7 +214,7 @@ class pcrMain extends PluginBase {
                     reFlashCoolDown(sender.getId());
                 } else {
                     //发送冷却提示消息
-                    event.getSubject().sendMessage(new At(sender).plus("抽卡抽的那么快，人家会受不了的"));
+                    event.getSubject().sendMessageAsync(new At(sender).plus("抽卡抽的那么快，人家会受不了的"));
                 }
             } else if (messageInString.contains("#up抽卡 ")) {
                 if (isCool(sender.getId())) {
@@ -219,11 +225,11 @@ class pcrMain extends PluginBase {
                         event.getSubject().sendMessageAsync(new At(sender).plus(gashapon.data));
                         reFlashCoolDown(sender.getId());
                     } catch (NumberFormatException e) {
-                        event.getSubject().sendMessage(("数字解析错误"));
+                        event.getSubject().sendMessageAsync(("数字解析错误"));
                     }
                 } else {
                     //发送冷却提示消息
-                    event.getSubject().sendMessage(new At(sender).plus("抽卡抽的那么快，人家会受不了的"));
+                    event.getSubject().sendMessageAsync(new At(sender).plus("抽卡抽的那么快，人家会受不了的"));
                 }
             } else if (messageInString.contains("#抽卡 ")) {
                 if (isCool(sender.getId())) {
@@ -234,7 +240,7 @@ class pcrMain extends PluginBase {
                         event.getSubject().sendMessageAsync(new At(sender).plus(gashapon.data));
                         reFlashCoolDown(sender.getId());
                     } catch (NumberFormatException e) {
-                        event.getSubject().sendMessage(("数字解析错误"));
+                        event.getSubject().sendMessageAsync(("数字解析错误"));
                     }
                 } else {
                     //发送冷却提示消息
@@ -246,9 +252,12 @@ class pcrMain extends PluginBase {
         }); // 模拟卡池
 
         this.getEventListener().subscribeAlways(GroupMessage.class, (GroupMessage event) -> {
-            if (event.getMessage().contentToString().contains(String.valueOf(event.getBot().getId()))) {
+            if (event.getMessage().toString().contains(String.valueOf(event.getBot().getId()))) {
                 if (event.getMessage().contentToString().contains("妈")) {
                     event.getSubject().sendMessage("干嘛,三刀出完了吗?");
+                    query(event.getSender());
+                } else if (event.getMessage().toString().contains("我爱你")) {
+                    event.getSubject().sendMessage("请用你的伤害来表达你的爱");
                     query(event.getSender());
                 }
             }
@@ -391,7 +400,7 @@ class pcrMain extends PluginBase {
 
 
         this.getLogger().info("记刀器已就绪");
-    }
+    } // 注册监听器们
 
     /**
      * 查询特定成员当天的出刀情况
@@ -497,12 +506,24 @@ class pcrMain extends PluginBase {
             }
         }
         for (int i = 0; i < tw; i++) {
-            int j = random.nextInt(two.length);
-            map2.merge(two[j], 1, Integer::sum); // todo: 二星up
+            int q = random.nextInt(16);
+            if (q < 3 && isUp) {//抽不抽的出来UP
+                map2.merge(two_plus[random.nextInt(two_plus.length)], 1, Integer::sum);
+            } else if (!isUp) {
+                map2.merge(two[random.nextInt(two.length)], 1, Integer::sum);
+            } else {
+                map2.merge(noUpTwo[random.nextInt(noUpTwo.length)], 1, Integer::sum);
+            }
         }
         for (int i = 0; i < on; i++) {
-            int j = random.nextInt(one.length);
-            map3.merge(one[j], 1, Integer::sum);
+            int q = random.nextInt(795);
+            if (q < 160 && isUp) {//抽不抽的出来UP
+                map3.merge(one_plus[random.nextInt(one_plus.length)], 1, Integer::sum);
+            } else if (!isUp) {
+                map3.merge(one[random.nextInt(one.length)], 1, Integer::sum);
+            } else {
+                map3.merge(noUpOne[random.nextInt(noUpOne.length)], 1, Integer::sum);
+            }
         }
         Gashapon g = new Gashapon();
         g.setData(get_GashaponString(on, tw, thre, map1, map2, map3));
@@ -635,8 +656,9 @@ class pcrMain extends PluginBase {
      * @return 组织好的字符串
      */
     public String getDamageString(long count, long damage, Member member) {
-        return ("今天" + getNameCard(member) + "共出" + count + "刀, " + "造成" + damage + "点伤害;");
+        return ("今天" + getNameCard(member) + "共出" + count + "刀, " + "造成" + damage + "点伤害, 约" + damage / 80000 + "淡");
     }
 }
 // TODO: 加入简单阵容记录(pic)
 // todo: 使用excel或网页展示统计数据
+// todo: 多群支持
