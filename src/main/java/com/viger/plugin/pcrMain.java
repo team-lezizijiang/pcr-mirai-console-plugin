@@ -415,7 +415,7 @@ class pcrMain extends PluginBase {
             long qq = temp.getId();
             PreparedStatement sql;
             sql = con.prepareStatement("select sum(damage) from records where memberID=? and date=?");
-            sql.setInt(2, new Date().getDay());
+            sql.setInt(2, new Date().getHours() > 5 ? new Date().getDay() : new Date().getDay() - 1);
             sql.setLong(1, qq);
             ResultSet rs = sql.executeQuery();
             this.getLogger().info("查询数据库...");
@@ -623,7 +623,7 @@ class pcrMain extends PluginBase {
             try {
                 count = query(member)[0];
                 totalDamage = query(member)[1];
-                msg.add(getDamageString(count, totalDamage, member));
+                msg.add(getDamageString(count, totalDamage, member) + "\n");
                 this.getLogger().info("查询完成");
             } catch (Exception e) {
                 e.printStackTrace();
