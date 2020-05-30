@@ -119,7 +119,6 @@ class pcrMain extends PluginBase {
                 if (enabled) {
                     try {
                         boolean isFinal = false;
-
                         if (messageInString.contains("尾刀")) {
                             isFinal = true;
                             messageInString = messageInString.replace("尾刀 ", "");
@@ -167,7 +166,7 @@ class pcrMain extends PluginBase {
                 } else {
                     if (sender.getPermission().getLevel() > 0) {
                         event.getSubject().sendMessage("开始查今天的出刀情况");
-                        getScheduler().async((Runnable) this::queryAll); // 揪出漏刀的小朋友
+                        Objects.requireNonNull(getScheduler()).async((Runnable) this::queryAll); // 揪出漏刀的小朋友
                     } else {
                         event.getSubject().sendMessage(("该指令为管理员专用的哦~")); // 防止刷屏
                     }
@@ -253,7 +252,7 @@ class pcrMain extends PluginBase {
 
         this.getEventListener().subscribeAlways(GroupMessage.class, (GroupMessage event) -> {
             if (event.getMessage().toString().contains(String.valueOf(event.getBot().getId()))) {
-                if (event.getMessage().contentToString().contains("妈")) {
+                if (Objects.requireNonNull(event.getMessage().first(At.Key)).getTarget() == event.getBot().getId()) {
                     event.getSubject().sendMessage("干嘛,三刀出完了吗?");
                     query(event.getSender());
                 } else if (event.getMessage().toString().contains("我爱你")) {
@@ -377,8 +376,8 @@ class pcrMain extends PluginBase {
             }
         });
 
-        getScheduler().repeat(() -> {
-            if (new Date().getHours() == 2 && new Date().getMinutes() == 0 && this.enabled) {
+        Objects.requireNonNull(getScheduler()).repeat(() -> {
+            if (Calendar.getInstance().get(Calendar.HOUR_OF_DAY) == 2 && Calendar.getInstance().get(Calendar.MINUTE) == 0 && this.enabled) {
                 LinkedList<Member> loudao = queryAll();
                 MessageChainBuilder message = new MessageChainBuilder();
                 message.add("牙白德斯内,今天");
@@ -389,7 +388,7 @@ class pcrMain extends PluginBase {
                 message.add("还没有出满三刀,请接受制裁~~~");
                 ((Member) memberList.toArray()[0]).getGroup().sendMessage(message.asMessageChain());
             }
-            if ((new Date().getHours() == 6 || new Date().getHours() == 0 || new Date().getHours() == 12 || new Date().getHours() == 18) && new Date().getMinutes() == 0 && Reminder) {
+            if ((Calendar.getInstance().get(Calendar.HOUR_OF_DAY) == 6 || Calendar.getInstance().get(Calendar.HOUR_OF_DAY) == 0 || Calendar.getInstance().get(Calendar.HOUR_OF_DAY) == 12 || Calendar.getInstance().get(Calendar.HOUR_OF_DAY) == 18) && Calendar.getInstance().get(Calendar.MINUTE) == 0 && Reminder) {
                 if (imgReminder == null) {
                     imgReminder = ((Member) memberList.toArray()[0]).getGroup().uploadImage(new File("./plugins/test/reminder.jpg"));
                 }
@@ -397,6 +396,25 @@ class pcrMain extends PluginBase {
             }
             this.getLogger().debug("checking time");
         }, 60000); // 使用最笨的方法实现自动查刀, 买药提醒
+
+
+        JCommandManager.getInstance().register(this, new BlockingCommand(
+                "查刀", new ArrayList<>(), " 测试用 ", ""
+        ) {
+            @Override
+            public boolean onCommandBlocking(@NotNull CommandSender commandSender, @NotNull List<String> list) {
+                LinkedList<Member> loudao = queryAll();
+                MessageChainBuilder msg = new MessageChainBuilder();
+                msg.add("牙白德斯内,今天");
+                for (Member nmsl : loudao) {
+                    msg.add(new At(nmsl));
+                    msg.add(", ");
+                }
+                msg.add("还没有出满三刀,请接受制裁~~~");
+                getLogger().debug(msg.toString());
+                return true;
+            }
+        });
 
 
         this.getLogger().info("记刀器已就绪");
@@ -413,9 +431,10 @@ class pcrMain extends PluginBase {
         long totalDamage = 0;
         try {
             long qq = temp.getId();
+            Calendar date = Calendar.getInstance();
             PreparedStatement sql;
             sql = con.prepareStatement("select sum(damage) from records where memberID=? and date=?");
-            sql.setInt(2, new Date().getHours() > 5 ? new Date().getDay() : new Date().getDay() - 1);
+            sql.setInt(2, date.get(Calendar.HOUR) > 5 ? date.get(Calendar.DATE) : date.get(Calendar.DATE) - 1);
             sql.setLong(1, qq);
             ResultSet rs = sql.executeQuery();
             this.getLogger().info("查询数据库...");
@@ -423,7 +442,7 @@ class pcrMain extends PluginBase {
             totalDamage = rs.getLong(1);
             sql = con.prepareStatement(
                     "select count(damage) from records where memberID=? and isFinal=? and date=?");
-            sql.setInt(3, new Date().getHours() > 5 ? new Date().getDay() : new Date().getDay() - 1);
+            sql.setInt(3, date.get(Calendar.HOUR) > 5 ? date.get(Calendar.DATE) : date.get(Calendar.DATE) - 1);
             sql.setLong(1, qq);
             sql.setBoolean(2, false);//
             rs = sql.executeQuery();
@@ -624,10 +643,10 @@ class pcrMain extends PluginBase {
                 count = query(member)[0];
                 totalDamage = query(member)[1];
                 msg.add(getDamageString(count, totalDamage, member) + "\n");
-                this.getLogger().info("查询完成");
+                this.getLogger().info("查询完成" + getDamageString(count, totalDamage, member));
             } catch (Exception e) {
                 e.printStackTrace();
-                this.getLogger().info("查询失败");
+                this.getLogger().error("查询失败" + e);
             }
             if (count < 3) {
                 loudao.add(member);
