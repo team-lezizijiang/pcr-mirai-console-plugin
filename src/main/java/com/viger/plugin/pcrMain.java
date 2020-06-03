@@ -20,7 +20,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.*;
 
-import static com.viger.plugin.Constant.helpMsg;
+import static com.viger.plugin.Constant.*;
 
 
 /**
@@ -41,7 +41,9 @@ class pcrMain extends PluginBase {
     private boolean Reminder; // 小助手开关
     private Image imgReminder; // 小助手资源
     private static HashMap<String, String> coolDown; //抽卡冷却时间
-    private Connection con; // 数据库链接
+    String username;
+    String password;// 数据库链接
+    private Connection con;
 
     public void onLoad() {
         super.onLoad();
@@ -75,8 +77,8 @@ class pcrMain extends PluginBase {
         two_plus = this.settings.getStringList("two_plus").toArray(new String[0]);
         one_plus = this.settings.getStringList("one_plus").toArray(new String[0]);
         QqExclude = this.settings.getLongList("QqExclude").toArray(new Long[0]);
-        String username = this.settings.getString("DBUsername");
-        String password = this.settings.getString("DBPassword");
+        username = this.settings.getString("DBUsername");
+        password = this.settings.getString("DBPassword");
         this.enabled = false;
         this.Reminder = this.settings.getBoolean("Reminder");
         this.settings.save(); // 读配置文件
@@ -88,10 +90,11 @@ class pcrMain extends PluginBase {
         try {
             Class.forName("com.mysql.jdbc.Driver");
             con = DriverManager.getConnection("jdbc:mysql://127.0.0.1:3306/pcr", username, password);
+            con.close();
         } catch (Exception e) {
             this.getLogger().error(e);
             this.getLogger().error("请在settings.yaml中设置您的mysql账号及密码!");
-        } // 初始化数据库连接
+        }// 初始化数据库连接
 
     }
 
@@ -103,7 +106,11 @@ class pcrMain extends PluginBase {
             Member sender = event.getSender();
 
             if (messageInString.contains("#开始记刀") || (!enabled && settings.getBoolean("Enabled"))) {
-                jidaoStart(event);
+                try {
+                    jidaoStart(event);
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
                 if (messageInString.contains("#开始记刀")) {
                     event.getSubject().sendMessage("开始记刀");
                 }
@@ -118,7 +125,9 @@ class pcrMain extends PluginBase {
             else if (messageInString.contains("#记刀 ")) {
                 if (enabled) {
                     try {
+                        con = DriverManager.getConnection("jdbc:mysql://127.0.0.1:3306/pcr", username, password);
                         boolean isFinal = false;
+                        Calendar date = Calendar.getInstance();
                         if (messageInString.contains("尾刀")) {
                             isFinal = true;
                             messageInString = messageInString.replace("尾刀 ", "");
@@ -128,10 +137,11 @@ class pcrMain extends PluginBase {
                         PreparedStatement sql = con.prepareStatement("insert into records values (?,?,?,?)");
                         sql.setLong(3, damage);
                         sql.setBoolean(2, isFinal);
-                        sql.setInt(4, new Date().getHours() > 5 ? new Date().getDay() : new Date().getDay() - 1);
+                        sql.setInt(4, date.get(Calendar.HOUR_OF_DAY) > 5 ? date.get(Calendar.DATE) : date.get(Calendar.DATE) - 1);
                         sql.setLong(1, event.getSender().getId());
                         sql.executeUpdate();
                         event.getSubject().sendMessage("记刀成功");
+                        con.close();
                     } catch (Exception e) {
                         event.getSubject().sendMessage("记刀失败");
                         this.getLogger().warning(e);
@@ -251,13 +261,18 @@ class pcrMain extends PluginBase {
         }); // 模拟卡池
 
         this.getEventListener().subscribeAlways(GroupMessage.class, (GroupMessage event) -> {
-            if (event.getMessage().toString().contains(String.valueOf(event.getBot().getId()))) {
-                if (Objects.requireNonNull(event.getMessage().first(At.Key)).getTarget() == event.getBot().getId()) {
-                    event.getSubject().sendMessage("干嘛,三刀出完了吗?");
-                    query(event.getSender());
-                } else if (event.getMessage().toString().contains("我爱你")) {
+            if (event.getMessage().toString().contains("at") && event.getMessage().first(At.Key).getTarget() == event.getBot().getId()) {
+                Random random = new Random();
+                random.setSeed(new Date().getTime());
+
+                if (event.getMessage().toString().contains("我爱你")) {
                     event.getSubject().sendMessage("请用你的伤害来表达你的爱");
-                    query(event.getSender());
+                    event.getSubject().sendMessage(getDamageString(query(event.getSender())[0], query(event.getSender())[1], event.getSender()));
+                    event.getSubject().sendMessage("就这水平?爬");
+                } else if (event.getMessage().toString().contains("妈")) {
+                    event.getSubject().sendMessage(kimo_Definde[random.nextInt(kimo_Definde.length)]);
+                } else {
+                    event.getSubject().sendMessage(responseStr[random.nextInt(responseStr.length)]);
                 }
             }
         }); // 写着玩
@@ -377,7 +392,7 @@ class pcrMain extends PluginBase {
         });
 
         Objects.requireNonNull(getScheduler()).repeat(() -> {
-            if (Calendar.getInstance().get(Calendar.HOUR_OF_DAY) == 2 && Calendar.getInstance().get(Calendar.MINUTE) == 0 && this.enabled) {
+            /*if (Calendar.getInstance().get(Calendar.HOUR_OF_DAY) == 2 && Calendar.getInstance().get(Calendar.MINUTE) == 0 && this.enabled) {
                 LinkedList<Member> loudao = queryAll();
                 MessageChainBuilder message = new MessageChainBuilder();
                 message.add("牙白德斯内,今天");
@@ -387,7 +402,7 @@ class pcrMain extends PluginBase {
                 }
                 message.add("还没有出满三刀,请接受制裁~~~");
                 ((Member) memberList.toArray()[0]).getGroup().sendMessage(message.asMessageChain());
-            }
+            }*/
             if ((Calendar.getInstance().get(Calendar.HOUR_OF_DAY) == 6 || Calendar.getInstance().get(Calendar.HOUR_OF_DAY) == 0 || Calendar.getInstance().get(Calendar.HOUR_OF_DAY) == 12 || Calendar.getInstance().get(Calendar.HOUR_OF_DAY) == 18) && Calendar.getInstance().get(Calendar.MINUTE) == 0 && Reminder) {
                 if (imgReminder == null) {
                     imgReminder = ((Member) memberList.toArray()[0]).getGroup().uploadImage(new File("./plugins/test/reminder.jpg"));
@@ -430,11 +445,12 @@ class pcrMain extends PluginBase {
         long count = 0;
         long totalDamage = 0;
         try {
+            con = DriverManager.getConnection("jdbc:mysql://127.0.0.1:3306/pcr", username, password);
             long qq = temp.getId();
             Calendar date = Calendar.getInstance();
             PreparedStatement sql;
             sql = con.prepareStatement("select sum(damage) from records where memberID=? and date=?");
-            sql.setInt(2, date.get(Calendar.HOUR) > 5 ? date.get(Calendar.DATE) : date.get(Calendar.DATE) - 1);
+            sql.setInt(2, date.get(Calendar.HOUR_OF_DAY) > 5 ? date.get(Calendar.DATE) : date.get(Calendar.DATE) - 1);
             sql.setLong(1, qq);
             ResultSet rs = sql.executeQuery();
             this.getLogger().info("查询数据库...");
@@ -442,12 +458,13 @@ class pcrMain extends PluginBase {
             totalDamage = rs.getLong(1);
             sql = con.prepareStatement(
                     "select count(damage) from records where memberID=? and isFinal=? and date=?");
-            sql.setInt(3, date.get(Calendar.HOUR) > 5 ? date.get(Calendar.DATE) : date.get(Calendar.DATE) - 1);
+            sql.setInt(3, date.get(Calendar.HOUR_OF_DAY) > 5 ? date.get(Calendar.DATE) : date.get(Calendar.DATE) - 1);
             sql.setLong(1, qq);
             sql.setBoolean(2, false);//
             rs = sql.executeQuery();
             rs.next();
             count = rs.getInt(1);
+            con.close();
         } catch (SQLException e) {
             e.printStackTrace();
             temp.getGroup().sendMessage("查询失败");
@@ -460,7 +477,8 @@ class pcrMain extends PluginBase {
      *
      * @param event 上下文
      */
-    private void jidaoStart(GroupMessage event) {
+    private void jidaoStart(GroupMessage event) throws SQLException {
+        con = DriverManager.getConnection("jdbc:mysql://127.0.0.1:3306/pcr", username, password);
         this.getLogger().info("开始记刀");
         this.getLogger().debug(enabled + " " + this.settings.getBoolean("Enabled"));
         this.settings.set("Enabled", Boolean.TRUE);
@@ -480,6 +498,7 @@ class pcrMain extends PluginBase {
                 getLogger().debug(e);
             }
         }
+        con.close();
     }
 
     /**

@@ -38,4 +38,9 @@ public class Constant {
             "\t 抽一发井是有冷却的，大概 2 分钟吧 \n" +
             "\t 只要是管理员就可以踢掉任何人（包括工会长(会长求别踢)）" +
             "\t (重要) 以上命令中,所有括号表示可选,不需要输入括号,空格请照原样输入";
+    public static final String[] kimo_Definde = {"孝心变质的气息", "hentai，谁是你妈啦 ", " 死肥宅一边玩去啦，不要打扰我 ", " 本小姐不想理你，并向你扔了一只胖次 ",
+            " 无应答......", " 嗷呜 %_%", " 谁是你妈啦，哼 ", " 对方无应答 ", " 你是个好人 ", " 对不起！您拨打的用户暂时无法接通，请稍后再拨.Sorry!The subscriber you dialed can not be connected for the moment, please redial later."
+            , " 傲娇与偏见 "};
+    public static final String[] responseStr = {"赣神魔,三刀出完了吗?", "妈还有事要做，没时间\n", "エラー発生", "让我看看是哪个小朋友又挂树了...啊?", "请去找淡茶真人热聊,服务器正在下锅", "你在说啥?咕嚕靈波（○′?‵）ノ?", "优衣对不起!...\n啥?"};
 }
+

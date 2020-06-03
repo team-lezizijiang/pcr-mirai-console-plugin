@@ -20,10 +20,6 @@ public class Gashapon {
         this.data = data;
     }
 
-    public boolean isBan() {
-        return ban;
-    }
-
     public void setBan(boolean ban) {
         this.ban = ban;
     }
