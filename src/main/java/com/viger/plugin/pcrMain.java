@@ -14,9 +14,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.sql.*;
-import java.text.SimpleDateFormat;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.*;
 
@@ -34,13 +31,13 @@ class pcrMain extends PluginBase {
             11413446L, // 哈特度
             2855958676L, // 群主宝宝妈妈爱你
             2371617404L};// 预定义的排除列表
-    private static String[] one, two, three, noUpThree, one_plus, two_plus, three_plus, noUpTwo, noUpOne;
+    static String[] one, two, three, noUpThree, one_plus, two_plus, three_plus, noUpTwo, noUpOne;
     private Config settings; // 配置文件
     private HashSet<Member> memberList; // 记刀的成员列表
     private boolean enabled; // 团队战开关
     private boolean Reminder; // 小助手开关
     private Image imgReminder; // 小助手资源
-    private static HashMap<String, String> coolDown; //抽卡冷却时间
+    static HashMap<String, String> coolDown; //抽卡冷却时间
     String username;
     String password;// 数据库链接
     private Connection con;
@@ -190,49 +187,49 @@ class pcrMain extends PluginBase {
             Member sender = event.getSender();
             this.getLogger().info(getNameCard(sender) + ':' + messageInString);
             if (messageInString.contains("#up十连")) {
-                if (isCool(sender.getId())) {
-                    Gashapon gashapon = dp_Gashapon(10, true);
-                    event.getSubject().sendMessageAsync(new At(sender).plus(gashapon.data));
-                    reFlashCoolDown(sender.getId());
+                if (Gashapon.isCool(sender.getId())) {
+                    Gashapon gashapon = new Gashapon(10, true);
+                    event.getSubject().sendMessageAsync(new At(sender).plus(gashapon.getData()));
+                    Gashapon.refreshCoolDown(sender.getId());
                 } else {
                     //发送冷却提示消息
                     event.getSubject().sendMessageAsync(new At(sender).plus("还抽?还有钻吗?给你两分钟去氪一单"));
                 }
             } else if (messageInString.contains("#十连")) {
-                if (isCool(sender.getId())) {
-                    Gashapon gashapon = dp_Gashapon(10, false);
-                    event.getSubject().sendMessageAsync(new At(sender).plus(gashapon.data));
-                    reFlashCoolDown(sender.getId());
+                if (Gashapon.isCool(sender.getId())) {
+                    Gashapon gashapon = new Gashapon(10, false);
+                    event.getSubject().sendMessageAsync(new At(sender).plus(gashapon.getData()));
+                    Gashapon.refreshCoolDown(sender.getId());
                 } else {
                     //发送冷却提示消息
                     event.getSubject().sendMessageAsync(new At(sender).plus("抽卡抽的那么快，人家会受不了的"));
                 }
             } else if (messageInString.contains("#井")) {
-                if (isCool(sender.getId())) {
-                    Gashapon gashapon = dp_Gashapon(300, false);
-                    event.getSubject().sendMessageAsync(new At(sender).plus(gashapon.data));
-                    reFlashCoolDown(sender.getId());
+                if (Gashapon.isCool(sender.getId())) {
+                    Gashapon gashapon = new Gashapon(300, false);
+                    event.getSubject().sendMessageAsync(new At(sender).plus(gashapon.getData()));
+                    Gashapon.refreshCoolDown(sender.getId());
                 } else {
                     //发送冷却提示消息
                     event.getSubject().sendMessageAsync(new At(sender).plus("抽卡抽的那么快，人家会受不了的"));
                 }
             } else if (messageInString.contains("#up井")) {
-                if (isCool(sender.getId())) {
-                    Gashapon gashapon = dp_Gashapon(300, true);
-                    event.getSubject().sendMessageAsync(new At(sender).plus(gashapon.data));
-                    reFlashCoolDown(sender.getId());
+                if (Gashapon.isCool(sender.getId())) {
+                    Gashapon gashapon = new Gashapon(300, true);
+                    event.getSubject().sendMessageAsync(new At(sender).plus(gashapon.getData()));
+                    Gashapon.refreshCoolDown(sender.getId());
                 } else {
                     //发送冷却提示消息
                     event.getSubject().sendMessageAsync(new At(sender).plus("抽卡抽的那么快，人家会受不了的"));
                 }
             } else if (messageInString.contains("#up抽卡 ")) {
-                if (isCool(sender.getId())) {
+                if (Gashapon.isCool(sender.getId())) {
                     String str = messageInString.replaceAll("#up抽卡 ", "");
                     try {
                         int q = Integer.parseInt(str);
-                        Gashapon gashapon = dp_Gashapon(q, true);
-                        event.getSubject().sendMessageAsync(new At(sender).plus(gashapon.data));
-                        reFlashCoolDown(sender.getId());
+                        Gashapon gashapon = new Gashapon(q, true);
+                        event.getSubject().sendMessageAsync(new At(sender).plus(gashapon.getData()));
+                        Gashapon.refreshCoolDown(sender.getId());
                     } catch (NumberFormatException e) {
                         event.getSubject().sendMessageAsync(("数字解析错误"));
                     }
@@ -241,13 +238,13 @@ class pcrMain extends PluginBase {
                     event.getSubject().sendMessageAsync(new At(sender).plus("抽卡抽的那么快，人家会受不了的"));
                 }
             } else if (messageInString.contains("#抽卡 ")) {
-                if (isCool(sender.getId())) {
+                if (Gashapon.isCool(sender.getId())) {
                     String str = messageInString.replaceAll("#抽卡 ", "");
                     try {
                         int q = Integer.parseInt(str);
-                        Gashapon gashapon = dp_Gashapon(q, false);
-                        event.getSubject().sendMessageAsync(new At(sender).plus(gashapon.data));
-                        reFlashCoolDown(sender.getId());
+                        Gashapon gashapon = new Gashapon(q, false);
+                        event.getSubject().sendMessageAsync(new At(sender).plus(gashapon.getData()));
+                        Gashapon.refreshCoolDown(sender.getId());
                     } catch (NumberFormatException e) {
                         event.getSubject().sendMessageAsync(("数字解析错误"));
                     }
@@ -298,6 +295,7 @@ class pcrMain extends PluginBase {
                             commandSender.sendMessageBlocking(" 移除成功 ");
                         } catch (Exception e) {
                             commandSender.sendMessageBlocking(" 移除失败. 是否已经移除? ");
+                            getLogger().warning(e);
                             return false;
                         }
                         break; // 移除不需要记刀的成员
@@ -501,150 +499,7 @@ class pcrMain extends PluginBase {
         con.close();
     }
 
-    /**
-     * up池的概率
-     */
-    public Gashapon dp_Gashapon(int num, boolean isUp) {
-        Random random = new Random();
-        random.setSeed(new Date().getTime());
-        int on = 0, tw = 0, thre = 0; // 抽出来的三星二星有几个
 
-        //无保底
-        for (int i = 0; i < num - num / 10; i++) {
-            int j = random.nextInt(1000);
-            if (j > 975) {
-                thre++;
-            } else if (j > 795) {
-                tw++;
-            } else {
-                on++;
-            }
-        }
-        //有保底
-        for (int i = 0; i < num / 10; i++) {
-            int j = random.nextInt(1000);
-            if (j > 975) {
-                thre++;
-            } else {
-                tw++;
-            }
-        }
-        HashMap<String, Integer> map1 = new HashMap<>();
-        HashMap<String, Integer> map2 = new HashMap<>();
-        HashMap<String, Integer> map3 = new HashMap<>();
-
-        for (int i = 0; i < thre; i++) {
-            int q = random.nextInt(25);
-            if (q < 7 && isUp) {//抽不抽的出来UP
-                map1.merge(three_plus[random.nextInt(three_plus.length)], 1, Integer::sum);
-            } else if (!isUp) {
-                map1.merge(three[random.nextInt(three.length)], 1, Integer::sum);
-            } else {
-                map1.merge(noUpThree[random.nextInt(noUpThree.length)], 1, Integer::sum);
-            }
-        }
-        for (int i = 0; i < tw; i++) {
-            int q = random.nextInt(16);
-            if (q < 3 && isUp) {//抽不抽的出来UP
-                map2.merge(two_plus[random.nextInt(two_plus.length)], 1, Integer::sum);
-            } else if (!isUp) {
-                map2.merge(two[random.nextInt(two.length)], 1, Integer::sum);
-            } else {
-                map2.merge(noUpTwo[random.nextInt(noUpTwo.length)], 1, Integer::sum);
-            }
-        }
-        for (int i = 0; i < on; i++) {
-            int q = random.nextInt(795);
-            if (q < 160 && isUp) {//抽不抽的出来UP
-                map3.merge(one_plus[random.nextInt(one_plus.length)], 1, Integer::sum);
-            } else if (!isUp) {
-                map3.merge(one[random.nextInt(one.length)], 1, Integer::sum);
-            } else {
-                map3.merge(noUpOne[random.nextInt(noUpOne.length)], 1, Integer::sum);
-            }
-        }
-        Gashapon g = new Gashapon();
-        g.setData(get_GashaponString(on, tw, thre, map1, map2, map3));
-        try {
-            g.setBan(num / thre < 20);
-        } catch (ArithmeticException e) {
-            g.setBan(false);
-        }
-        return g;
-    }
-
-    /**
-     * 组织抽卡结果
-     */
-    public String get_GashaponString(int on, int tw, int thre, HashMap<String, Integer> map1, HashMap<String, Integer> map2, HashMap<String, Integer> map3) {
-        StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.append("一共抽出了");
-        if (thre != 0) {
-            stringBuilder.append(thre).append("个三星;");
-        }
-        if (tw != 0) {
-            stringBuilder.append(tw).append("个二星;");
-        }
-        if (on != 0) {
-            stringBuilder.append(on).append("个一星");
-        }
-        Set<String> set1 = map1.keySet();
-        Set<String> set2 = map2.keySet();
-        Set<String> set3 = map3.keySet();
-        if (thre != 0) {
-            stringBuilder.append("\n三星角色有：");
-            for (String s : set1) {
-                stringBuilder.append(s).append("*").append(map1.get(s)).append(",");
-            }
-        }
-        if (tw != 0) {
-            stringBuilder.append("\n二星角色有：");
-            for (String s : set2) {
-                stringBuilder.append(s).append("*").append(map2.get(s)).append(",");
-            }
-        }
-
-        if (on != 0) {
-            stringBuilder.append("\n一星角色有：");
-            for (String s : set3) {
-                stringBuilder.append(s).append("*").append(map3.get(s)).append(",");
-            }
-        }
-
-        return stringBuilder.toString();
-    }
-
-
-    /**
-     * 刷新抽卡冷却时间
-     */
-    public void reFlashCoolDown(long QQ) {
-        LocalDateTime localDateTime = LocalDateTime.now();
-        localDateTime.plusSeconds(200);
-        DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm");
-        String time = localDateTime.format(dateTimeFormatter);
-        if (coolDown == null) {
-            coolDown = new HashMap<>();
-        }
-        coolDown.put(String.valueOf(QQ), time);
-    }
-
-    /**
-     * 获取冷却时间是不是到了
-     *
-     */
-    public boolean isCool(long QQ) {
-        if (coolDown == null) {
-            coolDown = new HashMap<>();
-            return true;
-        } else {
-            if (coolDown.get(String.valueOf(QQ)) != null) {
-                return coolDown.get(String.valueOf(QQ)).compareTo(new SimpleDateFormat("HH:mm").format(new Date())) < 0;
-            } else {
-                return true;
-            }
-        }
-    }
 
     /**
      * 全员查刀,发送消息
