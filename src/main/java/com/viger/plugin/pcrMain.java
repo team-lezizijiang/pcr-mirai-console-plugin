@@ -134,7 +134,7 @@ class pcrMain extends PluginBase {
                         PreparedStatement sql = con.prepareStatement("insert into records values (?,?,?,?)");
                         sql.setLong(3, damage);
                         sql.setBoolean(2, isFinal);
-                        sql.setInt(4, date.get(Calendar.HOUR_OF_DAY) > 5 ? date.get(Calendar.DATE) : date.get(Calendar.DATE) - 1);
+                        sql.setInt(4, date.get(Calendar.HOUR_OF_DAY) >= 5 ? date.get(Calendar.DATE) : date.get(Calendar.DATE) - 1);
                         sql.setLong(1, event.getSender().getId());
                         sql.executeUpdate();
                         event.getSubject().sendMessage("记刀成功");
@@ -447,20 +447,13 @@ class pcrMain extends PluginBase {
             long qq = temp.getId();
             Calendar date = Calendar.getInstance();
             PreparedStatement sql;
-            sql = con.prepareStatement("select sum(damage) from records where memberID=? and date=?");
-            sql.setInt(2, date.get(Calendar.HOUR_OF_DAY) > 5 ? date.get(Calendar.DATE) : date.get(Calendar.DATE) - 1);
+            sql = con.prepareStatement("select -sum(isFinal-1), sum(damage) from records where memberID=? and date=?");
+            sql.setInt(2, date.get(Calendar.HOUR_OF_DAY) >= 5 ? date.get(Calendar.DATE) : date.get(Calendar.DATE) - 1);
             sql.setLong(1, qq);
             ResultSet rs = sql.executeQuery();
             this.getLogger().info("查询数据库...");
             rs.next();
-            totalDamage = rs.getLong(1);
-            sql = con.prepareStatement(
-                    "select count(damage) from records where memberID=? and isFinal=? and date=?");
-            sql.setInt(3, date.get(Calendar.HOUR_OF_DAY) > 5 ? date.get(Calendar.DATE) : date.get(Calendar.DATE) - 1);
-            sql.setLong(1, qq);
-            sql.setBoolean(2, false);//
-            rs = sql.executeQuery();
-            rs.next();
+            totalDamage = rs.getLong(2);
             count = rs.getInt(1);
             con.close();
         } catch (SQLException e) {
