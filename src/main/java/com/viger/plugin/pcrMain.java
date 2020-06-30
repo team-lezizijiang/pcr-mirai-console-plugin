@@ -290,9 +290,11 @@ class pcrMain extends PluginBase {
                         }
                         long qq = Long.parseLong(list.get(1).trim());
                         try {
+                            con = DriverManager.getConnection("jdbc:mysql://127.0.0.1:3306/pcr", username, password);
                             con.prepareStatement(String.format("delete from records where pcr.records.memberID=%d", qq)).executeUpdate();
                             memberList.removeIf(member -> member.getId() == qq);
                             commandSender.sendMessageBlocking(" ÒÆ³ý³É¹¦ ");
+                            con.close();
                         } catch (Exception e) {
                             commandSender.sendMessageBlocking(" ÒÆ³ýÊ§°Ü. ÊÇ·ñÒÑ¾­ÒÆ³ý? ");
                             getLogger().warning(e);
@@ -334,8 +336,10 @@ class pcrMain extends PluginBase {
                     long qq = Long.parseLong(list.get(1).trim());
                     long damage = Long.parseLong(list.get(2).trim());
                     try {
+                        con = DriverManager.getConnection("jdbc:mysql://127.0.0.1:3306/pcr", username, password);
                         con.prepareStatement(String.format("delete from records where pcr.records.memberID=%d and pcr.records.damage=%d", qq, damage)).executeUpdate();
                         commandSender.sendMessageBlocking(" ÒÆ³ý³É¹¦ ");
+                        con.close();
                     } catch (Exception e) {
                         commandSender.sendMessageBlocking(" ÒÆ³ýÊ§°Ü. ÊÇ·ñÒÑ¾­ÒÆ³ý? ");
                         return false;
