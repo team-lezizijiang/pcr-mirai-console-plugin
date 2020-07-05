@@ -16,7 +16,7 @@ class Gashapon {
 
     Gashapon(int num, boolean isUp) {
         Random random = new Random();
-        random.setSeed(new Date().getTime());
+        random.setSeed(System.currentTimeMillis());
         int on = 0, tw = 0, thre = 0; // 抽出来的三星二星有几个
 
         //无保底
@@ -83,9 +83,9 @@ class Gashapon {
      */
     static void refreshCoolDown(long QQ) {
         LocalDateTime localDateTime = LocalDateTime.now();
-        localDateTime.plusSeconds(200);
+        LocalDateTime localDateTime1 = localDateTime.plusSeconds(200);
         DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm");
-        String time = localDateTime.format(dateTimeFormatter);
+        String time = localDateTime1.format(dateTimeFormatter);
         if (coolDown == null) {
             coolDown = new HashMap<>();
         }

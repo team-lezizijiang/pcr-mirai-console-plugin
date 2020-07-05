@@ -42,6 +42,7 @@ class pcrMain extends PluginBase {
     String password;// Êý¾Ý¿âÁ´½Ó
     private Connection con;
 
+    @Override
     public void onLoad() {
         super.onLoad();
         this.settings = this.loadConfig("settings.yaml");
@@ -95,7 +96,7 @@ class pcrMain extends PluginBase {
 
     }
 
-
+    @Override
     public void onEnable() {
 
         this.getEventListener().subscribeAlways(GroupMessage.class, (GroupMessage event) -> {
