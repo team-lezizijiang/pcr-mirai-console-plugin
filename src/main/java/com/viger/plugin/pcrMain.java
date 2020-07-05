@@ -6,7 +6,7 @@ import net.mamoe.mirai.console.command.JCommandManager;
 import net.mamoe.mirai.console.plugins.Config;
 import net.mamoe.mirai.console.plugins.PluginBase;
 import net.mamoe.mirai.contact.Member;
-import net.mamoe.mirai.message.GroupMessage;
+import net.mamoe.mirai.message.GroupMessageEvent;
 import net.mamoe.mirai.message.data.At;
 import net.mamoe.mirai.message.data.Image;
 import net.mamoe.mirai.message.data.MessageChainBuilder;
@@ -42,6 +42,7 @@ class pcrMain extends PluginBase {
     String password;// 数据库链接
     private Connection con;
 
+    @Override
     public void onLoad() {
         super.onLoad();
         this.settings = this.loadConfig("settings.yaml");
@@ -95,10 +96,10 @@ class pcrMain extends PluginBase {
 
     }
 
-
+    @Override
     public void onEnable() {
 
-        this.getEventListener().subscribeAlways(GroupMessage.class, (GroupMessage event) -> {
+        this.getEventListener().subscribeAlways(GroupMessageEvent.class, (GroupMessageEvent event) -> {
             String messageInString = event.getMessage().contentToString();
             Member sender = event.getSender();
 
@@ -182,7 +183,7 @@ class pcrMain extends PluginBase {
             } // 查看当天出刀情况
         }); // 团队战
 
-        this.getEventListener().subscribeAlways(GroupMessage.class, (GroupMessage event) -> {
+        this.getEventListener().subscribeAlways(GroupMessageEvent.class, (GroupMessageEvent event) -> {
             String messageInString = event.getMessage().contentToString();
             Member sender = event.getSender();
             this.getLogger().info(getNameCard(sender) + ':' + messageInString);
@@ -257,8 +258,8 @@ class pcrMain extends PluginBase {
 
         }); // 模拟卡池
 
-        this.getEventListener().subscribeAlways(GroupMessage.class, (GroupMessage event) -> {
-            if (event.getMessage().toString().contains("at") && event.getMessage().first(At.Key).getTarget() == event.getBot().getId()) {
+        this.getEventListener().subscribeAlways(GroupMessageEvent.class, (GroupMessageEvent event) -> {
+            if (event.getMessage().toString().contains("at") && Objects.requireNonNull(event.getMessage().first(At.Key)).getTarget() == event.getBot().getId()) {
                 Random random = new Random();
                 random.setSeed(new Date().getTime());
 
@@ -472,7 +473,7 @@ class pcrMain extends PluginBase {
      *
      * @param event 上下文
      */
-    private void jidaoStart(GroupMessage event) throws SQLException {
+    private void jidaoStart(GroupMessageEvent event) throws SQLException {
         con = DriverManager.getConnection("jdbc:mysql://127.0.0.1:3306/pcr", username, password);
         this.getLogger().info("开始记刀");
         this.getLogger().debug(enabled + " " + this.settings.getBoolean("Enabled"));

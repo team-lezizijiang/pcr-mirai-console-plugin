@@ -1,0 +1,6 @@
+name: "test"
+author: "viger"
+version: "0.1.0"
+main: "com.viger.plugin.pcrMain"
+info: ""
+depends: []
