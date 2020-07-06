@@ -45,7 +45,7 @@ class Gashapon {
 
         for (int i = 0; i < thre; i++) {
             int q = random.nextInt(25);
-            if (q < 7 && isUp) {//抽不抽的出来UP
+            if (q < 7 && isUp && three_plus.length > 0) {//抽不抽的出来UP
                 map1.merge(three_plus[random.nextInt(three_plus.length)], 1, Integer::sum);
             } else if (!isUp) {
                 map1.merge(three[random.nextInt(three.length)], 1, Integer::sum);
@@ -55,7 +55,7 @@ class Gashapon {
         }
         for (int i = 0; i < tw; i++) {
             int q = random.nextInt(16);
-            if (q < 3 && isUp) {//抽不抽的出来UP
+            if (q < 3 && isUp && two_plus.length > 0) {//抽不抽的出来UP
                 map2.merge(two_plus[random.nextInt(two_plus.length)], 1, Integer::sum);
             } else if (!isUp) {
                 map2.merge(two[random.nextInt(two.length)], 1, Integer::sum);
@@ -65,7 +65,7 @@ class Gashapon {
         }
         for (int i = 0; i < on; i++) {
             int q = random.nextInt(795);
-            if (q < 160 && isUp) {//抽不抽的出来UP
+            if (q < 160 && isUp && one_plus.length > 0) {//抽不抽的出来UP
                 map3.merge(one_plus[random.nextInt(one_plus.length)], 1, Integer::sum);
             } else if (!isUp) {
                 map3.merge(one[random.nextInt(one.length)], 1, Integer::sum);
