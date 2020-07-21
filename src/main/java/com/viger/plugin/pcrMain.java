@@ -1,18 +1,22 @@
 package com.viger.plugin;
 
+import net.mamoe.mirai.Bot;
 import net.mamoe.mirai.console.command.BlockingCommand;
 import net.mamoe.mirai.console.command.CommandSender;
 import net.mamoe.mirai.console.command.JCommandManager;
 import net.mamoe.mirai.console.plugins.Config;
 import net.mamoe.mirai.console.plugins.PluginBase;
+import net.mamoe.mirai.contact.Group;
 import net.mamoe.mirai.contact.Member;
 import net.mamoe.mirai.message.GroupMessageEvent;
 import net.mamoe.mirai.message.data.At;
 import net.mamoe.mirai.message.data.Image;
+import net.mamoe.mirai.message.data.Message;
 import net.mamoe.mirai.message.data.MessageChainBuilder;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
+import java.io.IOException;
 import java.sql.*;
 import java.util.Date;
 import java.util.*;
@@ -33,10 +37,12 @@ class pcrMain extends PluginBase {
             2371617404L};// 预定义的排除列表
     static String[] one, two, three, noUpThree, one_plus, two_plus, three_plus, noUpTwo, noUpOne;
     private Config settings; // 配置文件
+    private Group group;
     private HashSet<Member> memberList; // 记刀的成员列表
     private boolean enabled; // 团队战开关
     private boolean Reminder; // 小助手开关
     private Image imgReminder; // 小助手资源
+    private NewsFeeder feeder; // 新闻订阅器
     static HashMap<String, String> coolDown; //抽卡冷却时间
     String username;
     String password;// 数据库链接
@@ -47,7 +53,9 @@ class pcrMain extends PluginBase {
         super.onLoad();
         this.settings = this.loadConfig("settings.yaml");
         memberList = new HashSet<>();
+        this.feeder = new NewsFeeder();
         this.settings.setIfAbsent("Enabled", Boolean.FALSE);
+        this.settings.setIfAbsent("Group", 0);
         this.settings.setIfAbsent("one", Constant.one);
         this.settings.setIfAbsent("two", Constant.two);
         this.settings.setIfAbsent("three", Constant.Three);
@@ -98,7 +106,9 @@ class pcrMain extends PluginBase {
 
     @Override
     public void onEnable() {
-
+        getScheduler().delay(() -> {
+            group = Bot.getBotInstances().get(0).getGroup(settings.getLong("Group"));
+        }, 4000);
         this.getEventListener().subscribeAlways(GroupMessageEvent.class, (GroupMessageEvent event) -> {
             String messageInString = event.getMessage().contentToString();
             Member sender = event.getSender();
@@ -370,8 +380,8 @@ class pcrMain extends PluginBase {
                     Reminder = true;
                     settings.save();
                     try {
-                        imgReminder = ((Member) memberList.toArray()[0]).getGroup().uploadImage(new File("./plugins/test/reminder.jpg"));
-                        ((Member) memberList.toArray()[0]).getGroup().sendMessageAsync(imgReminder);
+                        imgReminder = group.uploadImage(new File("./plugins/test/reminder.jpg"));
+                        group.sendMessageAsync(imgReminder);
                         commandSender.sendMessageBlocking(" 开启成功 ");
                         return true;
                     } catch (Exception e) {
@@ -404,17 +414,29 @@ class pcrMain extends PluginBase {
                     message.add(", ");
                 }
                 message.add("还没有出满三刀,请接受制裁~~~");
-                ((Member) memberList.toArray()[0]).getGroup().sendMessage(message.asMessageChain());
+                group.sendMessage(message.asMessageChain());
             }*/
             if ((Calendar.getInstance().get(Calendar.HOUR_OF_DAY) == 6 || Calendar.getInstance().get(Calendar.HOUR_OF_DAY) == 0 || Calendar.getInstance().get(Calendar.HOUR_OF_DAY) == 12 || Calendar.getInstance().get(Calendar.HOUR_OF_DAY) == 18) && Calendar.getInstance().get(Calendar.MINUTE) == 0 && Reminder) {
                 if (imgReminder == null) {
-                    imgReminder = ((Member) memberList.toArray()[0]).getGroup().uploadImage(new File("./plugins/test/reminder.jpg"));
+                    imgReminder = group.uploadImage(new File("./plugins/test/reminder.jpg"));
                 }
-                ((Member) memberList.toArray()[0]).getGroup().sendMessageAsync(imgReminder);
+                group.sendMessageAsync(imgReminder);
             }
             this.getLogger().debug("checking time");
         }, 60000); // 使用最笨的方法实现自动查刀, 买药提醒
 
+        Objects.requireNonNull(getScheduler()).repeat(() -> {
+            try {
+                if (feeder.unread()) {
+                    for (Message msg : feeder.fetch(group)) {
+                        group.sendMessage(msg);
+                    }
+                }
+                this.getLogger().debug("检查动态更新");
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }, 600000);
 
         JCommandManager.getInstance().register(this, new BlockingCommand(
                 "查刀", new ArrayList<>(), " 测试用 ", ""
@@ -479,6 +501,7 @@ class pcrMain extends PluginBase {
         this.getLogger().debug(enabled + " " + this.settings.getBoolean("Enabled"));
         this.settings.set("Enabled", Boolean.TRUE);
         this.enabled = true;
+        this.settings.set("Group", event.getGroup().getId());
         this.settings.save();
         for (Member i : event.getGroup().getMembers()) {
             if (i != null) {
@@ -524,7 +547,7 @@ class pcrMain extends PluginBase {
                 loudao.add(member);
             }
         }
-        ((Member) memberList.toArray()[0]).getGroup().sendMessage(msg.asMessageChain());
+        group.sendMessage(msg.asMessageChain());
         return loudao;
     } // 全员查刀的实现
 

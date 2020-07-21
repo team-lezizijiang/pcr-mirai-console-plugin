@@ -18,6 +18,8 @@ def miraiCoreVersion = "+" // 1.0.1
 def miraiConsoleVersion = "+" // 0.5.2
 
 dependencies {
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.3.1'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.3.1'
     compileOnly 'org.jetbrains.kotlin:kotlin-stdlib-jdk8'
     compileOnly "net.mamoe:mirai-core:$miraiCoreVersion"
     compileOnly "net.mamoe:mirai-console:0.5.2"
@@ -37,3 +39,6 @@ compileTestKotlin {
 
 sourceCompatibility = JavaVersion.VERSION_1_8
 targetCompatibility = JavaVersion.VERSION_1_8
+test {
+    useJUnitPlatform()
+}
