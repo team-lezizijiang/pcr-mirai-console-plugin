@@ -113,7 +113,7 @@ class pcrMain extends PluginBase {
             String messageInString = event.getMessage().contentToString();
             Member sender = event.getSender();
 
-            if (messageInString.contains("#开始记刀") || (!enabled && settings.getBoolean("Enabled"))) {
+            if (messageInString.contains("#开始记刀")) {
                 try {
                     jidaoStart(event);
                 } catch (SQLException e) {
@@ -125,7 +125,8 @@ class pcrMain extends PluginBase {
             } // 开始记刀时,根据群员列表建立记录表
             else if (messageInString.contains("#结束记刀")) {
                 event.getSubject().sendMessage("结束记刀");
-                settings.set("Enabled", Boolean.FALSE);
+                settings.set("Group", 0);
+                getLogger().debug(event.getGroup().getName() + "结束记刀");
                 enabled = false;
                 settings.save();
             } // 结束记刀
@@ -498,8 +499,7 @@ class pcrMain extends PluginBase {
     private void jidaoStart(GroupMessageEvent event) throws SQLException {
         con = DriverManager.getConnection("jdbc:mysql://127.0.0.1:3306/pcr", username, password);
         this.getLogger().info("开始记刀");
-        this.getLogger().debug(enabled + " " + this.settings.getBoolean("Enabled"));
-        this.settings.set("Enabled", Boolean.TRUE);
+        this.getLogger().debug(enabled + " " + this.settings.getLong("Group"));
         this.enabled = true;
         this.settings.set("Group", event.getGroup().getId());
         this.settings.save();
