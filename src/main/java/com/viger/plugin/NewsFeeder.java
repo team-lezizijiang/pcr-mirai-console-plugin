@@ -70,12 +70,16 @@ public class NewsFeeder {
         } catch (ParserConfigurationException e) {
             e.printStackTrace();
         }
-        if (last == null || feed.getMessages().get(0).guid.equals(last.getMessages().get(0).guid)) {
-            System.out.print(feed.getMessages().get(0));
+        if (last == null) {
+            System.out.print(feed.getMessages().get(0) + "\n无更新内容");
+            last = feed;
+            return true;
+        } else if (feed.getMessages().get(0).guid.equals(last.getMessages().get(0).guid)) {
+            System.out.print(feed.getMessages().get(0) + "\n无更新内容");
             return false;
         } else {
             last = feed;
-            System.out.print(feed.getMessages().get(0));
+            System.out.print(feed.getMessages().get(0) + "\n检查到更新");
             return true;
         } // 检查是否有更新
     }
@@ -93,21 +97,21 @@ public class NewsFeeder {
         String text = "";
         for (FeedMessage feed : last.getMessages()) {
             if (Long.parseLong(feed.getGuid()) <= Long.parseLong(timestamp)) {
-                timestamp = feed.guid;
                 break;
             } else {
-                message.clear();
+                message = new MessageChainBuilder();
                 message.add("国服动态更新:\n");
                 text = feed.getDescription();
                 img = getImage(feed.getDescription(), contact);
-                text = text.replaceAll("<.*>", "");
                 text.replaceAll("<br>", "\n");
+                text = text.replaceAll("<.*>", "");
                 message.add(text);
                 message.addAll(img);
                 message.add(feed.getLink());
                 result.add(message.asMessageChain());
             }
         }
+        timestamp = last.getMessages().get(0).getGuid();
         return result;
     }
 

@@ -106,9 +106,7 @@ class pcrMain extends PluginBase {
 
     @Override
     public void onEnable() {
-        getScheduler().delay(() -> {
-            group = Bot.getBotInstances().get(0).getGroup(settings.getLong("Group"));
-        }, 4000);
+        Objects.requireNonNull(getScheduler()).delay(() -> group = Bot.getBotInstances().get(0).getGroup(settings.getLong("Group")), 4000);
         this.getEventListener().subscribeAlways(GroupMessageEvent.class, (GroupMessageEvent event) -> {
             String messageInString = event.getMessage().contentToString();
             Member sender = event.getSender();
@@ -426,18 +424,22 @@ class pcrMain extends PluginBase {
             this.getLogger().debug("checking time");
         }, 60000); // 使用最笨的方法实现自动查刀, 买药提醒
 
-        Objects.requireNonNull(getScheduler()).repeat(() -> {
-            try {
-                if (feeder.unread()) {
-                    for (Message msg : feeder.fetch(group)) {
-                        group.sendMessage(msg);
+        getScheduler().delay(() -> {
+            Objects.requireNonNull(getScheduler()).repeat(() -> {
+                try {
+                    if (feeder.unread()) {
+                        getLogger().debug("检查到更新");
+                        for (Message msg : feeder.fetch(group)) {
+                            group.sendMessage(msg);
+                            getLogger().debug(msg.contentToString());
+                        }
                     }
+                    this.getLogger().debug("检查动态更新");
+                } catch (IOException e) {
+                    e.printStackTrace();
                 }
-                this.getLogger().debug("检查动态更新");
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }, 600000);
+            }, 600000);
+        }, 3000);
 
         JCommandManager.getInstance().register(this, new BlockingCommand(
                 "查刀", new ArrayList<>(), " 测试用 ", ""
