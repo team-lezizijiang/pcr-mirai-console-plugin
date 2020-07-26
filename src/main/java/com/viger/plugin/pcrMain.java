@@ -16,7 +16,6 @@ import net.mamoe.mirai.message.data.MessageChainBuilder;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
-import java.io.IOException;
 import java.sql.*;
 import java.util.Date;
 import java.util.*;
@@ -435,7 +434,7 @@ class pcrMain extends PluginBase {
                         }
                     }
                     this.getLogger().debug("检查动态更新");
-                } catch (IOException e) {
+                } catch (Exception e) {
                     e.printStackTrace();
                 }
             }, 600000);

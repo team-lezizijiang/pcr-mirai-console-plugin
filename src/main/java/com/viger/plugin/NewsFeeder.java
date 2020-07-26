@@ -71,7 +71,8 @@ public class NewsFeeder {
             e.printStackTrace();
         }
         if (last == null) {
-            System.out.print(feed.getMessages().get(0) + "\n无更新内容");
+            feed.getMessages().removeAll(feed.getMessages().subList(1, feed.getMessages().size()));
+            System.out.print(feed.getMessages().size() + "\n无更新内容");
             last = feed;
             return true;
         } else if (feed.getMessages().get(0).guid.equals(last.getMessages().get(0).guid)) {
@@ -122,7 +123,7 @@ public class NewsFeeder {
     private LinkedList<Image> getImage(String description, Contact contact) throws MalformedURLException {
         LinkedList<Image> img = new LinkedList<>();
         Pattern IMG_PATTERN = Pattern.compile(
-                "<img.*src=\"(.*)\"\\s[^>]*?>",
+                "<img.*?src=\"(.*?)\".*?>",
                 Pattern.CASE_INSENSITIVE);
         Matcher IMG_MATCHER = IMG_PATTERN.matcher(description);
         while (IMG_MATCHER.find()) {
