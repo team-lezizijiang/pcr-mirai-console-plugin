@@ -423,22 +423,20 @@ class pcrMain extends PluginBase {
             this.getLogger().debug("checking time");
         }, 60000); // 使用最笨的方法实现自动查刀, 买药提醒
 
-        getScheduler().delay(() -> {
-            Objects.requireNonNull(getScheduler()).repeat(() -> {
-                try {
-                    if (feeder.unread()) {
-                        getLogger().debug("检查到更新");
-                        for (Message msg : feeder.fetch(group)) {
-                            group.sendMessage(msg);
-                            getLogger().debug(msg.contentToString());
-                        }
+        getScheduler().delay(() -> Objects.requireNonNull(getScheduler()).repeat(() -> {
+            try {
+                if (feeder.unread()) {
+                    getLogger().debug("检查到更新");
+                    for (Message msg : feeder.fetch(group)) {
+                        group.sendMessage(msg);
+                        getLogger().debug(msg.contentToString());
                     }
-                    this.getLogger().debug("检查动态更新");
-                } catch (Exception e) {
-                    e.printStackTrace();
                 }
-            }, 600000);
-        }, 3000);
+                this.getLogger().debug("检查动态更新");
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }, 600000), 3000);
 
         JCommandManager.getInstance().register(this, new BlockingCommand(
                 "查刀", new ArrayList<>(), " 测试用 ", ""

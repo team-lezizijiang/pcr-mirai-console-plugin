@@ -19,7 +19,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class NewsFeeder {
-    private final String url = "https://rsshub.viger.xyz/bilibili/user/dynamic/353840826";
     Feed last; // 上一次更新内容
     private String timestamp; // 最后一篇已读文章的时间戳
 
@@ -36,11 +35,12 @@ public class NewsFeeder {
      * @return 是否有未读文章
      */
     boolean unread() throws IOException {
-        Document doc = null;
+        Document doc;
         Feed feed = null;
-        Element root = null;
+        Element root;
         try {
-            doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(this.url);
+            String url = "https://rsshub.viger.xyz/bilibili/user/dynamic/353840826";
+            doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(url);
             String title, link, description, language, guid, pubdate;
             root = ((Element) ((Element) doc.getElementsByTagName("rss").item(0))
                     .getElementsByTagName("channel").item(0));
@@ -52,7 +52,7 @@ public class NewsFeeder {
 
 
             NodeList feedsList = root.getElementsByTagName("item");
-            Element feedElement = null;
+            Element feedElement;
 
             for (int i = 0; i < feedsList.getLength(); i++) {
                 feedElement = ((Element) feedsList.item(i));
@@ -65,9 +65,7 @@ public class NewsFeeder {
                 feed.getMessages().add(new FeedMessage(title, link, description, guid, pubdate));
             } // 填充rss消息
 
-        } catch (SAXException e) {
-            e.printStackTrace();
-        } catch (ParserConfigurationException e) {
+        } catch (SAXException | ParserConfigurationException e) {
             e.printStackTrace();
         }
         if (last == null) {
@@ -93,9 +91,9 @@ public class NewsFeeder {
      */
     LinkedList<Message> fetch(Contact contact) throws MalformedURLException {
         LinkedList<Message> result = new LinkedList<>();
-        MessageChainBuilder message = new MessageChainBuilder();
-        LinkedList<Image> img = new LinkedList<>();
-        String text = "";
+        MessageChainBuilder message;
+        LinkedList<Image> img;
+        String text;
         for (FeedMessage feed : last.getMessages()) {
             if (Long.parseLong(feed.getGuid()) <= Long.parseLong(timestamp)) {
                 break;
