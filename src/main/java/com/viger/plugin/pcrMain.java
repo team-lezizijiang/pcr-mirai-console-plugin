@@ -428,7 +428,7 @@ class pcrMain extends PluginBase {
                 if (feeder.unread()) {
                     getLogger().debug("检查到更新");
                     for (Message msg : feeder.fetch(group)) {
-                        group.sendMessage(msg);
+                        group.sendMessageAsync(msg);
                         getLogger().debug(msg.contentToString());
                     }
                 }

@@ -69,11 +69,13 @@ public class NewsFeeder {
             e.printStackTrace();
         }
         if (last == null) {
-            feed.getMessages().removeAll(feed.getMessages().subList(1, feed.getMessages().size()));
-            System.out.print(feed.getMessages().size() + "\n无更新内容");
-            last = feed;
-            return true;
-        } else if (feed.getMessages().get(0).guid.equals(last.getMessages().get(0).guid)) {
+            if (feed != null) {
+                feed.getMessages().removeAll(feed.getMessages().subList(1, feed.getMessages().size()));
+                System.out.print(feed.getMessages().size() + "\n无更新内容");
+                last = feed;
+            }
+            return false;
+        } else if (feed != null && feed.getMessages().get(0).guid.equals(last.getMessages().get(0).guid)) {
             System.out.print(feed.getMessages().get(0) + "\n无更新内容");
             return false;
         } else {
@@ -101,8 +103,9 @@ public class NewsFeeder {
                 message = new MessageChainBuilder();
                 message.add("国服动态更新:\n");
                 text = feed.getDescription();
+                text.replaceAll("<img.*?src=\"(.*?)\".*?>", "&flagImg");
                 img = getImage(feed.getDescription(), contact);
-                text.replaceAll("<br>", "\n");
+                text = text.replaceAll("<br>", "\n");
                 text = text.replaceAll("<.*>", "");
                 message.add(text);
                 message.addAll(img);
