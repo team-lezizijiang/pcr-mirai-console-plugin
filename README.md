@@ -10,6 +10,7 @@
 * 漏刀提醒, 买药提醒
 * 国服B站动态推送（图）
 * 模拟抽卡系统,借鉴自[pcrTool](https://github.com/sciuridae564/PcrTool)
+* 排名查询 API来自[镜华](https://github.com/Kengxxiao/Kyouka)
 
 ### 使用方法
 在qq群里发送消息  

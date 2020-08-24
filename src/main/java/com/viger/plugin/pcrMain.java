@@ -70,7 +70,7 @@ class pcrMain extends PluginBase {
         this.settings.setIfAbsent("DBUsername", "null");
         this.settings.setIfAbsent("DBPassword", "null");
         this.settings.save();
-        this.settings.setIfAbsent("one", Constant.one); // 写入默认值
+        this.settings.setIfAbsent("one", Constant.one); // 写入默认值 TODO: Rank
 
 
         one = this.settings.getStringList("one").toArray(new String[0]);
@@ -436,6 +436,7 @@ class pcrMain extends PluginBase {
 
         getScheduler().delay(() -> Objects.requireNonNull(getScheduler()).repeat(() -> {
             try {
+                rank.update();
                 if (feeder.unread()) {
                     getLogger().debug("检查到更新");
                     for (Message msg : feeder.fetch(group)) {
@@ -447,7 +448,7 @@ class pcrMain extends PluginBase {
             } catch (Exception e) {
                 e.printStackTrace();
             }
-        }, 600000), 4000);
+        }, 600000), 4000); //todo: 增加开关
 
         getScheduler().delay(() -> Objects.requireNonNull(getScheduler()).repeat(() -> {
             MessageChainBuilder builder = new MessageChainBuilder();
@@ -462,7 +463,7 @@ class pcrMain extends PluginBase {
                 e.printStackTrace();
             }
             group.sendMessage(builder.asMessageChain());
-        }, 1800000), 4000);
+        }, 1800000), 4000); //todo: 增加开关
 
         JCommandManager.getInstance().register(this, new BlockingCommand(
                 "查刀", new ArrayList<>(), " 测试用 ", ""
@@ -480,11 +481,11 @@ class pcrMain extends PluginBase {
                 getLogger().debug(msg.toString());
                 return true;
             }
-        });
+        }); //todo: 添加删除自动排名查询公会
 
 
         this.getLogger().info("记刀器已就绪");
-    } // 注册监听器们
+    } // 注册监听器们 todo: 模块化
 
     /**
      * 查询特定成员当天的出刀情况
