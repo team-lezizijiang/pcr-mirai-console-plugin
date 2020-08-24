@@ -46,6 +46,7 @@ class pcrMain extends PluginBase {
     String username;
     String password;// 数据库链接
     private Connection con;
+    private Rank rank;
 
     @Override
     public void onLoad() {
@@ -84,6 +85,8 @@ class pcrMain extends PluginBase {
         QqExclude = this.settings.getLongList("QqExclude").toArray(new Long[0]);
         username = this.settings.getString("DBUsername");
         password = this.settings.getString("DBPassword");
+        rank = new Rank();
+        rank.add("煎饼幼儿园");
         this.enabled = false;
         this.Reminder = this.settings.getBoolean("Reminder");
         this.settings.save(); // 读配置文件
@@ -283,6 +286,14 @@ class pcrMain extends PluginBase {
             }
         }); // 写着玩
 
+        this.getEventListener().subscribeAlways(GroupMessageEvent.class, (GroupMessageEvent event) -> {
+            if (event.getMessage().contentToString().equals("排名")) {
+                group.sendMessage(rank.query("煎饼幼儿园"));
+            } else if (event.getMessage().contentToString().startsWith("排名 ")) {
+                group.sendMessage(rank.query(event.getMessage().contentToString().replace("排名 ", "")));
+            }
+        });
+
         JCommandManager.getInstance().register(this, new BlockingCommand(
                 "member", new ArrayList<>(), " 管理需要记刀的成员 ", "/member remove/list"
         ) {
@@ -436,7 +447,22 @@ class pcrMain extends PluginBase {
             } catch (Exception e) {
                 e.printStackTrace();
             }
-        }, 600000), 3000);
+        }, 600000), 4000);
+
+        getScheduler().delay(() -> Objects.requireNonNull(getScheduler()).repeat(() -> {
+            MessageChainBuilder builder = new MessageChainBuilder();
+            try {
+                rank.update();
+                for (String clanname :
+                        rank.clanName.keySet()) {
+                    builder.add(rank.query(clanname));
+                }
+                this.getLogger().debug("检查排名更新");
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            group.sendMessage(builder.asMessageChain());
+        }, 1800000), 4000);
 
         JCommandManager.getInstance().register(this, new BlockingCommand(
                 "查刀", new ArrayList<>(), " 测试用 ", ""
