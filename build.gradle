@@ -22,12 +22,13 @@ dependencies {
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.3.1'
     compileOnly 'org.jetbrains.kotlin:kotlin-stdlib-jdk8'
     compileOnly "net.mamoe:mirai-core:$miraiCoreVersion"
-    compileOnly "net.mamoe:mirai-console:0.5.2"
+    compileOnly "net.mamoe:mirai-console:$miraiCoreVersion"
 
     testImplementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8'
     testImplementation "net.mamoe:mirai-core:$miraiCoreVersion"
     testImplementation "net.mamoe:mirai-core-qqandroid:$miraiCoreVersion"
-    testImplementation "net.mamoe:mirai-console:0.5.2"
+    testImplementation("net.mamoe:mirai-console-pure:$miraiConsoleVersion")
+    testImplementation "net.mamoe:mirai-console:$miraiConsoleVersion"
 }
 
 compileKotlin {

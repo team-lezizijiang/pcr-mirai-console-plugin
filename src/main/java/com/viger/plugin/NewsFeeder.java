@@ -73,6 +73,7 @@ public class NewsFeeder {
                 feed.getMessages().removeAll(feed.getMessages().subList(1, feed.getMessages().size()));
                 System.out.print(feed.getMessages().size() + "\n无更新内容");
                 last = feed;
+                timestamp = last.getMessages().get(0).getGuid();
             }
             return false;
         } else if (feed != null && feed.getMessages().get(0).guid.equals(last.getMessages().get(0).guid)) {
