@@ -4,6 +4,7 @@ import net.mamoe.mirai.contact.Contact;
 import net.mamoe.mirai.message.data.Image;
 import net.mamoe.mirai.message.data.Message;
 import net.mamoe.mirai.message.data.MessageChainBuilder;
+import org.jetbrains.annotations.NotNull;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
@@ -19,11 +20,13 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class NewsFeeder {
+    public static final NewsFeeder INSTANCE = new NewsFeeder(); // 单例化
     Feed last; // 上一次更新内容
     private String timestamp; // 最后一篇已读文章的时间戳
 
 
-    public NewsFeeder() {
+    private NewsFeeder() {
+        super();
         last = null;
         timestamp = "0";
     }
@@ -76,7 +79,7 @@ public class NewsFeeder {
                 timestamp = last.getMessages().get(0).getGuid();
             }
             return false;
-        } else if (feed != null && feed.getMessages().get(0).guid.equals(last.getMessages().get(0).guid)) {
+        } else if (feed != null && feed.getMessages().get(0).guid.equals(timestamp)) {
             System.out.print(feed.getMessages().get(0) + "\n无更新内容");
             return false;
         } else {
@@ -84,6 +87,19 @@ public class NewsFeeder {
             System.out.print(feed.getMessages().get(0) + "\n检查到更新");
             return true;
         } // 检查是否有更新
+    }
+
+    /**
+     * @param contact 要发送的对象
+     * @return 最近一条文章
+     * @throws MalformedURLException .
+     */
+    Message last(Contact contact) throws MalformedURLException {
+        MessageChainBuilder message;
+        FeedMessage feed = last.getMessages().get(0);
+        message = getSingleMessages(contact, feed);
+        timestamp = last.getMessages().get(0).getGuid();
+        return message.asMessageChain();
     }
 
     /**
@@ -101,21 +117,36 @@ public class NewsFeeder {
             if (Long.parseLong(feed.getGuid()) <= Long.parseLong(timestamp)) {
                 break;
             } else {
-                message = new MessageChainBuilder();
-                message.add("国服动态更新:\n");
-                text = feed.getDescription();
-                text.replaceAll("<img.*?src=\"(.*?)\".*?>", "&flagImg");
-                img = getImage(feed.getDescription(), contact);
-                text = text.replaceAll("<br>", "\n");
-                text = text.replaceAll("<.*>", "");
-                message.add(text);
-                message.addAll(img);
-                message.add(feed.getLink());
+                message = getSingleMessages(contact, feed);
                 result.add(message.asMessageChain());
             }
         }
         timestamp = last.getMessages().get(0).getGuid();
         return result;
+    }
+
+    /**
+     * @param contact 要发送的对象
+     * @param feed    单条文章
+     * @return 消息化文章
+     * @throws MalformedURLException .
+     */
+    @NotNull
+    private MessageChainBuilder getSingleMessages(Contact contact, FeedMessage feed) throws MalformedURLException {
+        MessageChainBuilder message;
+        String text;
+        LinkedList<Image> img;
+        message = new MessageChainBuilder();
+        message.add("国服动态更新:\n");
+        text = feed.getDescription();
+        text.replaceAll("<img.*?src=\"(.*?)\".*?>", "&flagImg");
+        img = getImage(feed.getDescription(), contact);
+        text = text.replaceAll("<br>", "\n");
+        text = text.replaceAll("<.*>", "");
+        message.add(text);
+        message.addAll(img);
+        message.add(feed.getLink());
+        return message;
     }
 
     /**

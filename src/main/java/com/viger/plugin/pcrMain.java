@@ -16,6 +16,7 @@ import net.mamoe.mirai.message.data.MessageChainBuilder;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
+import java.net.MalformedURLException;
 import java.sql.*;
 import java.util.Date;
 import java.util.*;
@@ -39,7 +40,9 @@ class pcrMain extends PluginBase {
     private Group group;
     private HashSet<Member> memberList; // 记刀的成员列表
     private boolean enabled; // 团队战开关
-    private boolean Reminder; // 小助手开关
+    private boolean ReminderSwitch; // 小助手开关
+    private boolean feederSwitch; // 新闻推送开关
+    private boolean rankSwitch; // 会战排名开关
     private Image imgReminder; // 小助手资源
     private NewsFeeder feeder; // 新闻订阅器
     static HashMap<String, String> coolDown; //抽卡冷却时间
@@ -53,7 +56,8 @@ class pcrMain extends PluginBase {
         super.onLoad();
         this.settings = this.loadConfig("settings.yaml");
         memberList = new HashSet<>();
-        this.feeder = new NewsFeeder();
+        this.feeder = NewsFeeder.INSTANCE;
+        this.rank = Rank.INSTANCE;
         this.settings.setIfAbsent("Enabled", Boolean.FALSE);
         this.settings.setIfAbsent("Group", 0);
         this.settings.setIfAbsent("one", Constant.one);
@@ -66,11 +70,13 @@ class pcrMain extends PluginBase {
         this.settings.setIfAbsent("noUpOne", Constant.noUpOne);
         this.settings.setIfAbsent("noUpTwo", Constant.noUpTwo);
         this.settings.setIfAbsent("QqExclude", QqExclude);
+        this.settings.setIfAbsent("RankSwitch", Boolean.FALSE);
+        this.settings.setIfAbsent("FeederSwitch", Boolean.TRUE);
         this.settings.setIfAbsent("Reminder", Boolean.TRUE);
         this.settings.setIfAbsent("DBUsername", "null");
         this.settings.setIfAbsent("DBPassword", "null");
         this.settings.save();
-        this.settings.setIfAbsent("one", Constant.one); // 写入默认值 TODO: Rank
+        this.settings.setIfAbsent("one", Constant.one); // 写入默认值
 
 
         one = this.settings.getStringList("one").toArray(new String[0]);
@@ -85,10 +91,11 @@ class pcrMain extends PluginBase {
         QqExclude = this.settings.getLongList("QqExclude").toArray(new Long[0]);
         username = this.settings.getString("DBUsername");
         password = this.settings.getString("DBPassword");
-        rank = new Rank();
         rank.add("煎饼幼儿园");
         this.enabled = false;
-        this.Reminder = this.settings.getBoolean("Reminder");
+        this.ReminderSwitch = this.settings.getBoolean("Reminder");
+        this.rankSwitch = this.settings.getBoolean("RankSwitch");
+        this.feederSwitch = this.settings.getBoolean("FeederSwitch");
         this.settings.save(); // 读配置文件
 
 
@@ -201,38 +208,38 @@ class pcrMain extends PluginBase {
             if (messageInString.contains("#up十连")) {
                 if (Gashapon.isCool(sender.getId())) {
                     Gashapon gashapon = new Gashapon(10, true);
-                    event.getSubject().sendMessageAsync(new At(sender).plus(gashapon.getData()));
+                    event.getSubject().sendMessage(new At(sender).plus(gashapon.getData()));
                     Gashapon.refreshCoolDown(sender.getId());
                 } else {
                     //发送冷却提示消息
-                    event.getSubject().sendMessageAsync(new At(sender).plus("还抽?还有钻吗?给你两分钟去氪一单"));
+                    event.getSubject().sendMessage(new At(sender).plus("还抽?还有钻吗?给你两分钟去氪一单"));
                 }
             } else if (messageInString.contains("#十连")) {
                 if (Gashapon.isCool(sender.getId())) {
                     Gashapon gashapon = new Gashapon(10, false);
-                    event.getSubject().sendMessageAsync(new At(sender).plus(gashapon.getData()));
+                    event.getSubject().sendMessage(new At(sender).plus(gashapon.getData()));
                     Gashapon.refreshCoolDown(sender.getId());
                 } else {
                     //发送冷却提示消息
-                    event.getSubject().sendMessageAsync(new At(sender).plus("抽卡抽的那么快，人家会受不了的"));
+                    event.getSubject().sendMessage(new At(sender).plus("抽卡抽的那么快，人家会受不了的"));
                 }
             } else if (messageInString.contains("#井")) {
                 if (Gashapon.isCool(sender.getId())) {
                     Gashapon gashapon = new Gashapon(300, false);
-                    event.getSubject().sendMessageAsync(new At(sender).plus(gashapon.getData()));
+                    event.getSubject().sendMessage(new At(sender).plus(gashapon.getData()));
                     Gashapon.refreshCoolDown(sender.getId());
                 } else {
                     //发送冷却提示消息
-                    event.getSubject().sendMessageAsync(new At(sender).plus("抽卡抽的那么快，人家会受不了的"));
+                    event.getSubject().sendMessage(new At(sender).plus("抽卡抽的那么快，人家会受不了的"));
                 }
             } else if (messageInString.contains("#up井")) {
                 if (Gashapon.isCool(sender.getId())) {
                     Gashapon gashapon = new Gashapon(300, true);
-                    event.getSubject().sendMessageAsync(new At(sender).plus(gashapon.getData()));
+                    event.getSubject().sendMessage(new At(sender).plus(gashapon.getData()));
                     Gashapon.refreshCoolDown(sender.getId());
                 } else {
                     //发送冷却提示消息
-                    event.getSubject().sendMessageAsync(new At(sender).plus("抽卡抽的那么快，人家会受不了的"));
+                    event.getSubject().sendMessage(new At(sender).plus("抽卡抽的那么快，人家会受不了的"));
                 }
             } else if (messageInString.contains("#up抽卡 ")) {
                 if (Gashapon.isCool(sender.getId())) {
@@ -240,14 +247,14 @@ class pcrMain extends PluginBase {
                     try {
                         int q = Integer.parseInt(str);
                         Gashapon gashapon = new Gashapon(q, true);
-                        event.getSubject().sendMessageAsync(new At(sender).plus(gashapon.getData()));
+                        event.getSubject().sendMessage(new At(sender).plus(gashapon.getData()));
                         Gashapon.refreshCoolDown(sender.getId());
                     } catch (NumberFormatException e) {
-                        event.getSubject().sendMessageAsync(("数字解析错误"));
+                        event.getSubject().sendMessage(("数字解析错误"));
                     }
                 } else {
                     //发送冷却提示消息
-                    event.getSubject().sendMessageAsync(new At(sender).plus("抽卡抽的那么快，人家会受不了的"));
+                    event.getSubject().sendMessage(new At(sender).plus("抽卡抽的那么快，人家会受不了的"));
                 }
             } else if (messageInString.contains("#抽卡 ")) {
                 if (Gashapon.isCool(sender.getId())) {
@@ -255,10 +262,10 @@ class pcrMain extends PluginBase {
                     try {
                         int q = Integer.parseInt(str);
                         Gashapon gashapon = new Gashapon(q, false);
-                        event.getSubject().sendMessageAsync(new At(sender).plus(gashapon.getData()));
+                        event.getSubject().sendMessage(new At(sender).plus(gashapon.getData()));
                         Gashapon.refreshCoolDown(sender.getId());
                     } catch (NumberFormatException e) {
-                        event.getSubject().sendMessageAsync(("数字解析错误"));
+                        event.getSubject().sendMessage(("数字解析错误"));
                     }
                 } else {
                     //发送冷却提示消息
@@ -292,7 +299,17 @@ class pcrMain extends PluginBase {
             } else if (event.getMessage().contentToString().startsWith("排名 ")) {
                 group.sendMessage(rank.query(event.getMessage().contentToString().replace("排名 ", "")));
             }
-        });
+        }); // 会战排名查询
+
+        this.getEventListener().subscribeAlways(GroupMessageEvent.class, (GroupMessageEvent event) -> {
+            if (event.getMessage().contentToString().equals("新闻")) {
+                try {
+                    event.getSubject().sendMessage(feeder.last(group));
+                } catch (MalformedURLException e) {
+                    getLogger().error(e);
+                }
+            }
+        }); // 手动看新闻
 
         JCommandManager.getInstance().register(this, new BlockingCommand(
                 "member", new ArrayList<>(), " 管理需要记刀的成员 ", "/member remove/list"
@@ -386,25 +403,25 @@ class pcrMain extends PluginBase {
                         return false;
                     }
                     settings.set("Reminder", Boolean.TRUE);
-                    Reminder = true;
+                    ReminderSwitch = true;
                     settings.save();
                     try {
                         imgReminder = group.uploadImage(new File("./plugins/test/reminder.jpg"));
-                        group.sendMessageAsync(imgReminder);
+                        group.sendMessage(imgReminder);
                         commandSender.sendMessageBlocking(" 开启成功 ");
                         return true;
                     } catch (Exception e) {
                         commandSender.sendMessageBlocking(" 开启失败. 请检查图片是否在正确路径下?");
                         getLogger().error(e);
                         settings.set("Reminder", Boolean.FALSE);
-                        Reminder = false;
+                        ReminderSwitch = false;
                         settings.save();
                         return false;
                     }
                     // 移除记录错误的记录
                 } else if ("disable".equals(list.get(0))) {
                     settings.set("Reminder", Boolean.FALSE);
-                    Reminder = false;
+                    ReminderSwitch = false;
                     settings.save();
                     return true;
                 } else {
@@ -414,22 +431,16 @@ class pcrMain extends PluginBase {
         });
 
         Objects.requireNonNull(getScheduler()).repeat(() -> {
-            /*if (Calendar.getInstance().get(Calendar.HOUR_OF_DAY) == 2 && Calendar.getInstance().get(Calendar.MINUTE) == 0 && this.enabled) {
-                LinkedList<Member> loudao = queryAll();
-                MessageChainBuilder message = new MessageChainBuilder();
-                message.add("牙白德斯内,今天");
-                for (Member nmsl : loudao) {
-                    message.add(new At(nmsl));
-                    message.add(", ");
-                }
-                message.add("还没有出满三刀,请接受制裁~~~");
-                group.sendMessage(message.asMessageChain());
-            }*/
-            if ((Calendar.getInstance().get(Calendar.HOUR_OF_DAY) == 6 || Calendar.getInstance().get(Calendar.HOUR_OF_DAY) == 0 || Calendar.getInstance().get(Calendar.HOUR_OF_DAY) == 12 || Calendar.getInstance().get(Calendar.HOUR_OF_DAY) == 18) && Calendar.getInstance().get(Calendar.MINUTE) == 0 && Reminder) {
+            if ((Calendar.getInstance().get(Calendar.HOUR_OF_DAY) == 6 ||
+                    Calendar.getInstance().get(Calendar.HOUR_OF_DAY) == 0 ||
+                    Calendar.getInstance().get(Calendar.HOUR_OF_DAY) == 12 ||
+                    Calendar.getInstance().get(Calendar.HOUR_OF_DAY) == 18) &&
+                    Calendar.getInstance().get(Calendar.MINUTE) == 0 &&
+                    ReminderSwitch) {
                 if (imgReminder == null) {
                     imgReminder = group.uploadImage(new File("./plugins/test/reminder.jpg"));
                 }
-                group.sendMessageAsync(imgReminder);
+                group.sendMessage(imgReminder);
             }
             this.getLogger().debug("checking time");
         }, 60000); // 使用最笨的方法实现自动查刀, 买药提醒
@@ -437,10 +448,10 @@ class pcrMain extends PluginBase {
         getScheduler().delay(() -> Objects.requireNonNull(getScheduler()).repeat(() -> {
             try {
                 rank.update();
-                if (feeder.unread()) {
+                if (feeder.unread() && feederSwitch) {
                     getLogger().debug("检查到更新");
                     for (Message msg : feeder.fetch(group)) {
-                        group.sendMessageAsync(msg);
+                        group.sendMessage(msg);
                         getLogger().debug(msg.contentToString());
                     }
                 }
@@ -451,18 +462,20 @@ class pcrMain extends PluginBase {
         }, 600000), 4000); //todo: 增加开关
 
         getScheduler().delay(() -> Objects.requireNonNull(getScheduler()).repeat(() -> {
-            MessageChainBuilder builder = new MessageChainBuilder();
-            try {
-                rank.update();
-                for (String clanname :
-                        rank.clanName.keySet()) {
-                    builder.add(rank.query(clanname));
+            if (rankSwitch) {
+                MessageChainBuilder builder = new MessageChainBuilder();
+                try {
+                    rank.update();
+                    for (String clanname :
+                            rank.clanName.keySet()) {
+                        builder.add(rank.query(clanname));
+                    }
+                    this.getLogger().debug("检查排名更新");
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
-                this.getLogger().debug("检查排名更新");
-            } catch (Exception e) {
-                e.printStackTrace();
+                group.sendMessage(builder.asMessageChain());
             }
-            group.sendMessage(builder.asMessageChain());
         }, 1800000), 4000); //todo: 增加开关
 
         JCommandManager.getInstance().register(this, new BlockingCommand(
@@ -545,7 +558,6 @@ class pcrMain extends PluginBase {
         }
         con.close();
     }
-
 
 
     /**
