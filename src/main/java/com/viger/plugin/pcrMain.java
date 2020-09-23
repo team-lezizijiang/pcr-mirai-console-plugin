@@ -277,7 +277,8 @@ class pcrMain extends PluginBase {
         }); // 模拟卡池
 
         this.getEventListener().subscribeAlways(GroupMessageEvent.class, (GroupMessageEvent event) -> {
-            if (event.getMessage().toString().contains("at") && Objects.requireNonNull(event.getMessage().first(At.Key)).getTarget() == event.getBot().getId()) {
+            if (event.getMessage().toString().contains("at") &&
+                    Objects.requireNonNull(event.getMessage().first(At.Key)).getTarget() == event.getBot().getId()) {
                 Random random = new Random();
                 random.setSeed(new Date().getTime());
 
@@ -374,7 +375,12 @@ class pcrMain extends PluginBase {
                     long damage = Long.parseLong(list.get(2).trim());
                     try {
                         con = DriverManager.getConnection("jdbc:mysql://127.0.0.1:3306/pcr", username, password);
-                        con.prepareStatement(String.format("delete from records where pcr.records.memberID=%d and pcr.records.damage=%d", qq, damage)).executeUpdate();
+                        con.prepareStatement(String.format("delete " +
+                                        "from records " +
+                                        "where pcr.records.memberID=%d " +
+                                        "and pcr.records.damage=%d",
+                                qq,
+                                damage)).executeUpdate();
                         commandSender.sendMessageBlocking(" 移除成功 ");
                         con.close();
                     } catch (Exception e) {
@@ -447,7 +453,10 @@ class pcrMain extends PluginBase {
 
         getScheduler().delay(() -> Objects.requireNonNull(getScheduler()).repeat(() -> {
             try {
-                rank.update();
+                if (rankSwitch) {
+                    rank.update();
+                }
+
                 if (feeder.unread() && feederSwitch) {
                     getLogger().debug("检查到更新");
                     for (Message msg : feeder.fetch(group)) {
@@ -459,7 +468,7 @@ class pcrMain extends PluginBase {
             } catch (Exception e) {
                 e.printStackTrace();
             }
-        }, 600000), 4000); //todo: 增加开关
+        }, 600000), 4000);
 
         getScheduler().delay(() -> Objects.requireNonNull(getScheduler()).repeat(() -> {
             if (rankSwitch) {
@@ -476,7 +485,7 @@ class pcrMain extends PluginBase {
                 }
                 group.sendMessage(builder.asMessageChain());
             }
-        }, 1800000), 4000); //todo: 增加开关
+        }, 1800000), 4000);
 
         JCommandManager.getInstance().register(this, new BlockingCommand(
                 "查刀", new ArrayList<>(), " 测试用 ", ""
@@ -495,6 +504,38 @@ class pcrMain extends PluginBase {
                 return true;
             }
         }); //todo: 添加删除自动排名查询公会
+
+        JCommandManager.getInstance().register(this, new BlockingCommand(
+                "rank", new ArrayList<>(), " 开关排名自动查询 ", "/rank"
+        ) {
+            @Override
+            public boolean onCommandBlocking(@NotNull CommandSender commandSender, @NotNull List<String> list) {
+                if (list.size() > 0) {
+                    commandSender.sendMessageBlocking(getUsage());
+                } else {
+                    rankSwitch = !rankSwitch;
+                    getLogger().debug("自动排名已" + (rankSwitch ? "开启" : "关闭"));
+                    commandSender.sendMessageBlocking("自动排名已" + (rankSwitch ? "开启" : "关闭"));
+                }
+                return true;
+            }
+        });
+
+        JCommandManager.getInstance().register(this, new BlockingCommand(
+                "feed", new ArrayList<>(), " 开关新闻推送 ", "/feed"
+        ) {
+            @Override
+            public boolean onCommandBlocking(@NotNull CommandSender commandSender, @NotNull List<String> list) {
+                if (list.size() > 0) {
+                    commandSender.sendMessageBlocking(getUsage());
+                } else {
+                    feederSwitch = !feederSwitch;
+                    getLogger().debug("自动排名已" + (feederSwitch ? "开启" : "关闭"));
+                    commandSender.sendMessageBlocking("自动排名已" + (feederSwitch ? "开启" : "关闭"));
+                }
+                return true;
+            }
+        });
 
 
         this.getLogger().info("记刀器已就绪");
@@ -611,6 +652,5 @@ class pcrMain extends PluginBase {
         return ("今天" + getNameCard(member) + "共出" + count + "刀, " + "造成" + damage + "点伤害, 约" + damage / 80000 + "淡");
     }
 }
-// TODO: 加入简单阵容记录(pic)
 // todo: 使用excel或网页展示统计数据
 // todo: 多群支持
