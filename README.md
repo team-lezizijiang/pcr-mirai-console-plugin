@@ -1,7 +1,7 @@
 # 公主链接自动记刀机器人
 
 简单的qq机器人,写着来玩的  
-使用了[mirai-console](https://github.com/mamoe/mirai-console)框架
+使用了[mirai-console](https://github.com/mamoe/mirai-console) 框架
 
 ### 主要功能
 * 记录伤害,日期,出刀者

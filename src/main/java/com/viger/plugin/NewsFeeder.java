@@ -4,6 +4,7 @@ import net.mamoe.mirai.contact.Contact;
 import net.mamoe.mirai.message.data.Image;
 import net.mamoe.mirai.message.data.Message;
 import net.mamoe.mirai.message.data.MessageChainBuilder;
+import org.jetbrains.annotations.NotNull;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
@@ -19,20 +20,22 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class NewsFeeder {
-    Feed last; // ÉÏÒ»´Î¸üĞÂÄÚÈİ
-    private String timestamp; // ×îºóÒ»ÆªÒÑ¶ÁÎÄÕÂµÄÊ±¼ä´Á
+    public static final NewsFeeder INSTANCE = new NewsFeeder(); // å•ä¾‹åŒ–
+    Feed last; // ä¸Šä¸€æ¬¡æ›´æ–°å†…å®¹
+    private String timestamp; // æœ€åä¸€ç¯‡å·²è¯»æ–‡ç« çš„æ—¶é—´æˆ³
 
 
-    public NewsFeeder() {
+    private NewsFeeder() {
+        super();
         last = null;
         timestamp = "0";
     }
 
 
     /**
-     * ¼ì²éÊÇ·ñÓĞÎ´¶ÁÎÄÕÂ
+     * æ£€æŸ¥æ˜¯å¦æœ‰æœªè¯»æ–‡ç« 
      *
-     * @return ÊÇ·ñÓĞÎ´¶ÁÎÄÕÂ
+     * @return æ˜¯å¦æœ‰æœªè¯»æ–‡ç« 
      */
     boolean unread() throws IOException {
         Document doc;
@@ -48,7 +51,7 @@ public class NewsFeeder {
             link = root.getElementsByTagName("link").item(0).getTextContent();
             language = root.getElementsByTagName("language").item(0).getTextContent();
             description = root.getElementsByTagName("description").item(0).getTextContent();
-            feed = new Feed(title, link, description, language); // rss½âÎö³ÉfeedÀà
+            feed = new Feed(title, link, description, language); // rssè§£ææˆfeedç±»
 
 
             NodeList feedsList = root.getElementsByTagName("item");
@@ -63,7 +66,7 @@ public class NewsFeeder {
                 link = feedElement.getElementsByTagName("link").item(0).getTextContent();
                 pubdate = feedElement.getElementsByTagName("pubDate").item(0).getTextContent();
                 feed.getMessages().add(new FeedMessage(title, link, description, guid, pubdate));
-            } // Ìî³ärssÏûÏ¢
+            } // å¡«å……rssæ¶ˆæ¯
 
         } catch (SAXException | ParserConfigurationException e) {
             e.printStackTrace();
@@ -71,26 +74,39 @@ public class NewsFeeder {
         if (last == null) {
             if (feed != null) {
                 feed.getMessages().removeAll(feed.getMessages().subList(1, feed.getMessages().size()));
-                System.out.print(feed.getMessages().size() + "\nÎŞ¸üĞÂÄÚÈİ");
+                System.out.print(feed.getMessages().size() + "\næ— æ›´æ–°å†…å®¹");
                 last = feed;
                 timestamp = last.getMessages().get(0).getGuid();
             }
             return false;
-        } else if (feed != null && feed.getMessages().get(0).guid.equals(last.getMessages().get(0).guid)) {
-            System.out.print(feed.getMessages().get(0) + "\nÎŞ¸üĞÂÄÚÈİ");
+        } else if (feed != null && feed.getMessages().get(0).guid.equals(timestamp)) {
+            System.out.print(feed.getMessages().get(0) + "\næ— æ›´æ–°å†…å®¹");
             return false;
         } else {
             last = feed;
-            System.out.print(feed.getMessages().get(0) + "\n¼ì²éµ½¸üĞÂ");
+            System.out.print(feed.getMessages().get(0) + "\næ£€æŸ¥åˆ°æ›´æ–°");
             return true;
-        } // ¼ì²éÊÇ·ñÓĞ¸üĞÂ
+        } // æ£€æŸ¥æ˜¯å¦æœ‰æ›´æ–°
     }
 
     /**
-     * »ñÈ¡×îĞÂµÄÎÄÕÂÃÇ
+     * @param contact è¦å‘é€çš„å¯¹è±¡
+     * @return æœ€è¿‘ä¸€æ¡æ–‡ç« 
+     * @throws MalformedURLException .
+     */
+    public Message last(Contact contact) throws MalformedURLException {
+        MessageChainBuilder message;
+        FeedMessage feed = last.getMessages().get(0);
+        message = getSingleMessages(contact, feed);
+        timestamp = last.getMessages().get(0).getGuid();
+        return message.asMessageChain();
+    }
+
+    /**
+     * è·å–æœ€æ–°çš„æ–‡ç« ä»¬
      *
-     * @param contact Òª·¢ËÍµÄ¶ÔÏó
-     * @return Î´¶ÁÎÄÕÂÏûÏ¢»¯
+     * @param contact è¦å‘é€çš„å¯¹è±¡
+     * @return æœªè¯»æ–‡ç« æ¶ˆæ¯åŒ–
      */
     LinkedList<Message> fetch(Contact contact) throws MalformedURLException {
         LinkedList<Message> result = new LinkedList<>();
@@ -101,16 +117,7 @@ public class NewsFeeder {
             if (Long.parseLong(feed.getGuid()) <= Long.parseLong(timestamp)) {
                 break;
             } else {
-                message = new MessageChainBuilder();
-                message.add("¹ú·ş¶¯Ì¬¸üĞÂ:\n");
-                text = feed.getDescription();
-                text.replaceAll("<img.*?src=\"(.*?)\".*?>", "&flagImg");
-                img = getImage(feed.getDescription(), contact);
-                text = text.replaceAll("<br>", "\n");
-                text = text.replaceAll("<.*>", "");
-                message.add(text);
-                message.addAll(img);
-                message.add(feed.getLink());
+                message = getSingleMessages(contact, feed);
                 result.add(message.asMessageChain());
             }
         }
@@ -119,8 +126,32 @@ public class NewsFeeder {
     }
 
     /**
-     * @param description ¶¯Ì¬µÄhtmlÎÄ±¾
-     * @return ¶¯Ì¬ÖĞµÄÍ¼Æ¬
+     * @param contact è¦å‘é€çš„å¯¹è±¡
+     * @param feed    å•æ¡æ–‡ç« 
+     * @return æ¶ˆæ¯åŒ–æ–‡ç« 
+     * @throws MalformedURLException .
+     */
+    @NotNull
+    private MessageChainBuilder getSingleMessages(Contact contact, FeedMessage feed) throws MalformedURLException {
+        MessageChainBuilder message;
+        String text;
+        LinkedList<Image> img;
+        message = new MessageChainBuilder();
+        message.add("å›½æœåŠ¨æ€æ›´æ–°:\n");
+        text = feed.getDescription();
+        text.replaceAll("<img.*?src=\"(.*?)\".*?>", "&flagImg");
+        img = getImage(feed.getDescription(), contact);
+        text = text.replaceAll("<br>", "\n");
+        text = text.replaceAll("<.*>", "");
+        message.add(text);
+        message.addAll(img);
+        message.add(feed.getLink());
+        return message;
+    }
+
+    /**
+     * @param description åŠ¨æ€çš„htmlæ–‡æœ¬
+     * @return åŠ¨æ€ä¸­çš„å›¾ç‰‡
      */
     private LinkedList<Image> getImage(String description, Contact contact) throws MalformedURLException {
         LinkedList<Image> img = new LinkedList<>();

@@ -14,11 +14,13 @@ import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 
 public class Rank {
+    public static final Rank INSTANCE = new Rank();
     String url_first = "https://service-kjcbcnmw-1254119946.gz.apigw.tencentcs.com/name/0";
     String headers = "{\"Custom-Source\":\"GitHub@var-mixer\",\"Content-Type\": \"application/json\",\"Referer\": \"https://kengxxiao.github.io/Kyouka/\"}";
     LinkedHashMap<String, String> clanName;
 
-    public Rank() {
+    private Rank() {
+        super();
         clanName = new LinkedHashMap<>();
     }
 
@@ -38,7 +40,7 @@ public class Rank {
 
     public Message query(String toQuery) {
         MessageChainBuilder content = new MessageChainBuilder();
-        content.add("公会" + toQuery + "当前的排名为: ");
+        content.add("鍏細" + toQuery + "褰撳墠鐨勬帓鍚嶄负: ");
         content.add(clanName.containsKey(toQuery) ? clanName.get(toQuery) : getRank(toQuery));
         content.add("\n");
         return content.asMessageChain();
