@@ -40,7 +40,7 @@ public class Rank {
 
     public Message query(String toQuery) {
         MessageChainBuilder content = new MessageChainBuilder();
-        content.add("公会" + toQuery + "当前的排名为: ");
+        content.add("鍏細" + toQuery + "褰撳墠鐨勬帓鍚嶄负: ");
         content.add(clanName.containsKey(toQuery) ? clanName.get(toQuery) : getRank(toQuery));
         content.add("\n");
         return content.asMessageChain();

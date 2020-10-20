@@ -11,15 +11,16 @@ import java.util.Set;
 import static com.viger.plugin.pcrMain.*;
 
 
-class Gashapon {
+public class Gashapon {
+
     private String data;
 
-    Gashapon(int num, boolean isUp) {
+    public Gashapon(int num, boolean isUp) {
         Random random = new Random();
         random.setSeed(System.currentTimeMillis());
-        int on = 0, tw = 0, thre = 0; // ³é³öÀ´µÄÈıĞÇ¶şĞÇÓĞ¼¸¸ö
+        int on = 0, tw = 0, thre = 0; // æŠ½å‡ºæ¥çš„ä¸‰æ˜ŸäºŒæ˜Ÿæœ‰å‡ ä¸ª
 
-        //ÎŞ±£µ×
+        //æ— ä¿åº•
         for (int i = 0; i < num - num / 10; i++) {
             int j = random.nextInt(1000);
             if (j > 975) {
@@ -30,7 +31,7 @@ class Gashapon {
                 on++;
             }
         }
-        //ÓĞ±£µ×
+        //æœ‰ä¿åº•
         for (int i = 0; i < num / 10; i++) {
             int j = random.nextInt(1000);
             if (j > 975) {
@@ -45,43 +46,43 @@ class Gashapon {
 
         for (int i = 0; i < thre; i++) {
             int q = random.nextInt(25);
-            if (q < 7 && isUp && three_plus.length > 0) {//³é²»³éµÄ³öÀ´UP
-                map1.merge(three_plus[random.nextInt(three_plus.length)], 1, Integer::sum);
+            if (q < 7 && isUp && three_plus.size() > 0) {//æŠ½ä¸æŠ½çš„å‡ºæ¥UP
+                map1.merge(three_plus.get(random.nextInt(three_plus.size())), 1, Integer::sum);
             } else if (!isUp) {
-                map1.merge(three[random.nextInt(three.length)], 1, Integer::sum);
+                map1.merge(three.get(random.nextInt(three.size())), 1, Integer::sum);
             } else {
-                map1.merge(noUpThree[random.nextInt(noUpThree.length)], 1, Integer::sum);
+                map1.merge(noUpThree.get(random.nextInt(noUpThree.size())), 1, Integer::sum);
             }
         }
         for (int i = 0; i < tw; i++) {
             int q = random.nextInt(16);
-            if (q < 3 && isUp && two_plus.length > 0) {//³é²»³éµÄ³öÀ´UP
-                map2.merge(two_plus[random.nextInt(two_plus.length)], 1, Integer::sum);
+            if (q < 3 && isUp && two_plus.size() > 0) {//æŠ½ä¸æŠ½çš„å‡ºæ¥UP
+                map2.merge(two_plus.get(random.nextInt(two_plus.size())), 1, Integer::sum);
             } else if (!isUp) {
-                map2.merge(two[random.nextInt(two.length)], 1, Integer::sum);
+                map2.merge(two.get(random.nextInt(two.size())), 1, Integer::sum);
             } else {
-                map2.merge(noUpTwo[random.nextInt(noUpTwo.length)], 1, Integer::sum);
+                map2.merge(noUpTwo.get(random.nextInt(noUpTwo.size())), 1, Integer::sum);
             }
         }
         for (int i = 0; i < on; i++) {
             int q = random.nextInt(795);
-            if (q < 160 && isUp && one_plus.length > 0) {//³é²»³éµÄ³öÀ´UP
-                map3.merge(one_plus[random.nextInt(one_plus.length)], 1, Integer::sum);
+            if (q < 160 && isUp && one_plus.size() > 0) {//æŠ½ä¸æŠ½çš„å‡ºæ¥UP
+                map3.merge(one_plus.get(random.nextInt(one_plus.size())), 1, Integer::sum);
             } else if (!isUp) {
-                map3.merge(one[random.nextInt(one.length)], 1, Integer::sum);
+                map3.merge(one.get(random.nextInt(one.size())), 1, Integer::sum);
             } else {
-                map3.merge(noUpOne[random.nextInt(noUpOne.length)], 1, Integer::sum);
+                map3.merge(noUpOne.get(random.nextInt(noUpOne.size())), 1, Integer::sum);
             }
         }
         this.setData(on, tw, thre, map1, map2, map3);
     }
 
     /**
-     * Ë¢ĞÂÀäÈ´Ê±¼ä
+     * åˆ·æ–°å†·å´æ—¶é—´
      *
      * @param QQ :qq
      */
-    static void refreshCoolDown(long QQ) {
+    public static void refreshCoolDown(long QQ) {
         LocalDateTime localDateTime = LocalDateTime.now();
         LocalDateTime localDateTime1 = localDateTime.plusSeconds(200);
         DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm");
@@ -93,9 +94,9 @@ class Gashapon {
     }
 
     /**
-     * »ñÈ¡ÀäÈ´Ê±¼äÊÇ²»ÊÇµ½ÁË
+     * è·å–å†·å´æ—¶é—´æ˜¯ä¸æ˜¯åˆ°äº†
      */
-    static boolean isCool(long QQ) {
+    public static boolean isCool(long QQ) {
         if (coolDown == null) {
             coolDown = new HashMap<>();
             return true;
@@ -110,34 +111,34 @@ class Gashapon {
 
     private void setData(int on, int tw, int thre, HashMap<String, Integer> map1, HashMap<String, Integer> map2, HashMap<String, Integer> map3) {
         StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.append("Ò»¹²³é³öÁË");
+        stringBuilder.append("ä¸€å…±æŠ½å‡ºäº†");
         if (thre != 0) {
-            stringBuilder.append(thre).append("¸öÈıĞÇ;");
+            stringBuilder.append(thre).append("ä¸ªä¸‰æ˜Ÿ;");
         }
         if (tw != 0) {
-            stringBuilder.append(tw).append("¸ö¶şĞÇ;");
+            stringBuilder.append(tw).append("ä¸ªäºŒæ˜Ÿ;");
         }
         if (on != 0) {
-            stringBuilder.append(on).append("¸öÒ»ĞÇ");
+            stringBuilder.append(on).append("ä¸ªä¸€æ˜Ÿ");
         }
         Set<String> set1 = map1.keySet();
         Set<String> set2 = map2.keySet();
         Set<String> set3 = map3.keySet();
         if (thre != 0) {
-            stringBuilder.append("\nÈıĞÇ½ÇÉ«ÓĞ£º");
+            stringBuilder.append("\nä¸‰æ˜Ÿè§’è‰²æœ‰ï¼š");
             for (String s : set1) {
                 stringBuilder.append(s).append("*").append(map1.get(s)).append(",");
             }
         }
         if (tw != 0) {
-            stringBuilder.append("\n¶şĞÇ½ÇÉ«ÓĞ£º");
+            stringBuilder.append("\näºŒæ˜Ÿè§’è‰²æœ‰ï¼š");
             for (String s : set2) {
                 stringBuilder.append(s).append("*").append(map2.get(s)).append(",");
             }
         }
 
         if (on != 0) {
-            stringBuilder.append("\nÒ»ĞÇ½ÇÉ«ÓĞ£º");
+            stringBuilder.append("\nä¸€æ˜Ÿè§’è‰²æœ‰ï¼š");
             for (String s : set3) {
                 stringBuilder.append(s).append("*").append(map3.get(s)).append(",");
             }
@@ -146,7 +147,8 @@ class Gashapon {
         this.data = stringBuilder.toString();
     }
 
-    String getData() {
+    public String getData() {
         return data;
     }
 }
+// todo: å¡æ± è‡ªåŠ¨æ›´æ–°

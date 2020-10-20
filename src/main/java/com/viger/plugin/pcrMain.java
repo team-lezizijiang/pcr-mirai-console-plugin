@@ -1,442 +1,95 @@
 package com.viger.plugin;
 
+import com.viger.plugin.commands.*;
+import com.viger.plugin.listensers.ClanListener;
+import com.viger.plugin.listensers.GashaponListener;
+import com.viger.plugin.listensers.NewsFeederListener;
+import com.viger.plugin.listensers.RankListener;
 import net.mamoe.mirai.Bot;
-import net.mamoe.mirai.console.command.BlockingCommand;
-import net.mamoe.mirai.console.command.CommandSender;
-import net.mamoe.mirai.console.command.JCommandManager;
-import net.mamoe.mirai.console.plugins.Config;
-import net.mamoe.mirai.console.plugins.PluginBase;
+import net.mamoe.mirai.console.command.CommandManager;
+import net.mamoe.mirai.console.plugin.jvm.JavaPlugin;
+import net.mamoe.mirai.console.plugin.jvm.JvmPluginDescriptionBuilder;
 import net.mamoe.mirai.contact.Group;
 import net.mamoe.mirai.contact.Member;
-import net.mamoe.mirai.message.GroupMessageEvent;
-import net.mamoe.mirai.message.data.At;
+import net.mamoe.mirai.event.Events;
 import net.mamoe.mirai.message.data.Image;
 import net.mamoe.mirai.message.data.Message;
 import net.mamoe.mirai.message.data.MessageChainBuilder;
-import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
-import java.net.MalformedURLException;
-import java.sql.*;
-import java.util.Date;
+import java.sql.Connection;
+import java.sql.DriverManager;
 import java.util.*;
-
-import static com.viger.plugin.Constant.*;
 
 
 /**
- * ²å¼şÖ÷Ìå
+ * æ’ä»¶ä¸»ä½“
  */
-class pcrMain extends PluginBase {
-    private static Long[] QqExclude = {1466131295L, // Elish
-            2314125066L, // ¸¡
-            3378035874L, // ÎÒºÜºÃÆæ
-            3236214319L, // ºÚ
-            11413446L, // ¹şÌØ¶È
-            2855958676L, // ÈºÖ÷±¦±¦ÂèÂè°®Äã
-            2371617404L};// Ô¤¶¨ÒåµÄÅÅ³ıÁĞ±í
-    static String[] one, two, three, noUpThree, one_plus, two_plus, three_plus, noUpTwo, noUpOne;
-    private Config settings; // ÅäÖÃÎÄ¼ş
-    private Group group;
-    private HashSet<Member> memberList; // ¼Çµ¶µÄ³ÉÔ±ÁĞ±í
-    private boolean enabled; // ÍÅ¶ÓÕ½¿ª¹Ø
-    private boolean ReminderSwitch; // Ğ¡ÖúÊÖ¿ª¹Ø
-    private boolean feederSwitch; // ĞÂÎÅÍÆËÍ¿ª¹Ø
-    private boolean rankSwitch; // »áÕ½ÅÅÃû¿ª¹Ø
-    private Image imgReminder; // Ğ¡ÖúÊÖ×ÊÔ´
-    private NewsFeeder feeder; // ĞÂÎÅ¶©ÔÄÆ÷
-    static HashMap<String, String> coolDown; //³é¿¨ÀäÈ´Ê±¼ä
-    String username;
-    String password;// Êı¾İ¿âÁ´½Ó
-    private Connection con;
-    private Rank rank;
+public class pcrMain extends JavaPlugin {
+    public final static pcrMain INSTANCE = new pcrMain();
+    public static Group group;
+    static List<String> one, two, three, noUpThree, one_plus, two_plus, three_plus, noUpTwo, noUpOne;
+    static HashMap<String, String> coolDown;     //æŠ½å¡å†·å´æ—¶é—´
+    public final PcrData data = PcrData.INSTANCE; // é…ç½®æ–‡ä»¶
+    public String username;
+    public String password;
+    public Set<Long> memberList; // è®°åˆ€çš„æˆå‘˜åˆ—è¡¨
+    public boolean enabled; // å›¢é˜Ÿæˆ˜å¼€å…³
+    public Long groupID;
+    public boolean ReminderSwitch; // å°åŠ©æ‰‹å¼€å…³
+    public boolean feederSwitch; // æ–°é—»æ¨é€å¼€å…³
+    public boolean rankSwitch; // ä¼šæˆ˜æ’åå¼€å…³
+    public Image imgReminder; // å°åŠ©æ‰‹èµ„æº
+    public NewsFeeder feeder; // æ–°é—»è®¢é˜…å™¨
+    public Rank rank;
+    public Connection con;// æ•°æ®åº“é“¾æ¥
 
-    @Override
+    public pcrMain() {
+        super(new JvmPluginDescriptionBuilder("xyz.viger.pcrplugin", "1.0.0-dev-1").author("viger").build());
+    }
+
+
     public void onLoad() {
-        super.onLoad();
-        this.settings = this.loadConfig("settings.yaml");
-        memberList = new HashSet<>();
-        this.feeder = NewsFeeder.INSTANCE;
-        this.rank = Rank.INSTANCE;
-        this.settings.setIfAbsent("Enabled", Boolean.FALSE);
-        this.settings.setIfAbsent("Group", 0);
-        this.settings.setIfAbsent("one", Constant.one);
-        this.settings.setIfAbsent("two", Constant.two);
-        this.settings.setIfAbsent("three", Constant.Three);
-        this.settings.setIfAbsent("one_plus", Constant.one_plus);
-        this.settings.setIfAbsent("two_plus", Constant.two_plus);
-        this.settings.setIfAbsent("three_plus", Constant.Three_plus);
-        this.settings.setIfAbsent("noUpThree", Constant.noUpThree);
-        this.settings.setIfAbsent("noUpOne", Constant.noUpOne);
-        this.settings.setIfAbsent("noUpTwo", Constant.noUpTwo);
-        this.settings.setIfAbsent("QqExclude", QqExclude);
-        this.settings.setIfAbsent("RankSwitch", Boolean.FALSE);
-        this.settings.setIfAbsent("FeederSwitch", Boolean.TRUE);
-        this.settings.setIfAbsent("Reminder", Boolean.TRUE);
-        this.settings.setIfAbsent("DBUsername", "null");
-        this.settings.setIfAbsent("DBPassword", "null");
-        this.settings.save();
-        this.settings.setIfAbsent("one", Constant.one); // Ğ´ÈëÄ¬ÈÏÖµ
-
-
-        one = this.settings.getStringList("one").toArray(new String[0]);
-        two = this.settings.getStringList("two").toArray(new String[0]);
-        three = this.settings.getStringList("three").toArray(new String[0]);
-        noUpThree = this.settings.getStringList("noUpThree").toArray(new String[0]);
-        noUpTwo = this.settings.getStringList("noUpTwo").toArray(new String[0]);
-        noUpOne = this.settings.getStringList("noUpOne").toArray(new String[0]);
-        three_plus = this.settings.getStringList("three_plus").toArray(new String[0]);
-        two_plus = this.settings.getStringList("two_plus").toArray(new String[0]);
-        one_plus = this.settings.getStringList("one_plus").toArray(new String[0]);
-        QqExclude = this.settings.getLongList("QqExclude").toArray(new Long[0]);
-        username = this.settings.getString("DBUsername");
-        password = this.settings.getString("DBPassword");
-        rank.add("¼å±ıÓ×¶ùÔ°");
-        this.enabled = false;
-        this.ReminderSwitch = this.settings.getBoolean("Reminder");
-        this.rankSwitch = this.settings.getBoolean("RankSwitch");
-        this.feederSwitch = this.settings.getBoolean("FeederSwitch");
-        this.settings.save(); // ¶ÁÅäÖÃÎÄ¼ş
-
-
-        if (username.equals("null")) {
-            return;
-        }
-        try {
-            Class.forName("com.mysql.jdbc.Driver");
-            con = DriverManager.getConnection("jdbc:mysql://127.0.0.1:3306/pcr", username, password);
-            con.close();
-        } catch (Exception e) {
-            this.getLogger().error(e);
-            this.getLogger().error("ÇëÔÚsettings.yamlÖĞÉèÖÃÄúµÄmysqlÕËºÅ¼°ÃÜÂë!");
-        }// ³õÊ¼»¯Êı¾İ¿âÁ¬½Ó
+        reloadPluginConfig(data);
 
     }
 
     @Override
     public void onEnable() {
-        Objects.requireNonNull(getScheduler()).delay(() -> group = Bot.getBotInstances().get(0).getGroup(settings.getLong("Group")), 4000);
-        this.getEventListener().subscribeAlways(GroupMessageEvent.class, (GroupMessageEvent event) -> {
-            String messageInString = event.getMessage().contentToString();
-            Member sender = event.getSender();
-
-            if (messageInString.contains("#¿ªÊ¼¼Çµ¶")) {
-                try {
-                    jidaoStart(event);
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                }
-                if (messageInString.contains("#¿ªÊ¼¼Çµ¶")) {
-                    event.getSubject().sendMessage("¿ªÊ¼¼Çµ¶");
-                }
-            } // ¿ªÊ¼¼Çµ¶Ê±,¸ù¾İÈºÔ±ÁĞ±í½¨Á¢¼ÇÂ¼±í
-            else if (messageInString.contains("#½áÊø¼Çµ¶")) {
-                event.getSubject().sendMessage("½áÊø¼Çµ¶");
-                settings.set("Group", 0);
-                getLogger().debug(event.getGroup().getName() + "½áÊø¼Çµ¶");
-                enabled = false;
-                settings.save();
-            } // ½áÊø¼Çµ¶
-
-            else if (messageInString.contains("#¼Çµ¶ ")) {
-                if (enabled) {
-                    try {
-                        con = DriverManager.getConnection("jdbc:mysql://127.0.0.1:3306/pcr", username, password);
-                        boolean isFinal = false;
-                        Calendar date = Calendar.getInstance();
-                        if (messageInString.contains("Î²µ¶")) {
-                            isFinal = true;
-                            messageInString = messageInString.replace("Î²µ¶ ", "");
-                        }
-                        messageInString = messageInString.replace("#¼Çµ¶ ", "");
-                        long damage = Long.parseLong((messageInString));
-                        PreparedStatement sql = con.prepareStatement("insert into records values (?,?,?,?)");
-                        sql.setLong(3, damage);
-                        sql.setBoolean(2, isFinal);
-                        sql.setInt(4, date.get(Calendar.HOUR_OF_DAY) >= 5 ? date.get(Calendar.DATE) : date.get(Calendar.DATE) - 1);
-                        sql.setLong(1, event.getSender().getId());
-                        sql.executeUpdate();
-                        event.getSubject().sendMessage("¼Çµ¶³É¹¦");
-                        con.close();
-                    } catch (Exception e) {
-                        event.getSubject().sendMessage("¼Çµ¶Ê§°Ü");
-                        this.getLogger().warning(e);
-                    }
-                }
-            } //¼Çµ¶,ÄÚÈİ°üÀ¨ÉËº¦ Ê±¼ä ÊÇ·ñÎ²µ¶
-
-            if (messageInString.contains("#°ïÖú")) {
-                event.getSubject().sendMessage(helpMsg);
-            } // ÏÔÊ¾°ïÖúĞÅÏ¢
-
-            if (messageInString.contains("#²éµ¶")) {
-                if (messageInString.contains("#²éµ¶ ")) {
-                    messageInString = messageInString.replace("#²éµ¶ ", "");
-                    long qq = 0;
-                    String nick = null;
-                    Member temp = null;
-                    try {
-                        qq = Long.parseLong(messageInString);
-                    } catch (Exception e) {
-                        nick = messageInString;
-                    }
-                    for (Member member : memberList) {
-                        if (member.getId() == qq || getNameCard(member).equals(nick)) {
-                            temp = member;
-                            qq = member.getId();
-                            nick = getNameCard(member);
-                        }
-                    }
-                    assert temp != null;
-                    event.getSubject().sendMessage(getDamageString(query(temp)[0], query(temp)[1], temp));
-                } else {
-                    if (sender.getPermission().getLevel() > 0) {
-                        event.getSubject().sendMessage("¿ªÊ¼²é½ñÌìµÄ³öµ¶Çé¿ö");
-                        Objects.requireNonNull(getScheduler()).async((Runnable) this::queryAll); // ¾¾³öÂ©µ¶µÄĞ¡ÅóÓÑ
-                    } else {
-                        event.getSubject().sendMessage(("¸ÃÖ¸ÁîÎª¹ÜÀíÔ±×¨ÓÃµÄÅ¶~")); // ·ÀÖ¹Ë¢ÆÁ
-                    }
-                }
-
-            } // ²é¿´µ±Ìì³öµ¶Çé¿ö
-        }); // ÍÅ¶ÓÕ½
-
-        this.getEventListener().subscribeAlways(GroupMessageEvent.class, (GroupMessageEvent event) -> {
-            String messageInString = event.getMessage().contentToString();
-            Member sender = event.getSender();
-            this.getLogger().info(getNameCard(sender) + ':' + messageInString);
-            if (messageInString.contains("#upÊ®Á¬")) {
-                if (Gashapon.isCool(sender.getId())) {
-                    Gashapon gashapon = new Gashapon(10, true);
-                    event.getSubject().sendMessage(new At(sender).plus(gashapon.getData()));
-                    Gashapon.refreshCoolDown(sender.getId());
-                } else {
-                    //·¢ËÍÀäÈ´ÌáÊ¾ÏûÏ¢
-                    event.getSubject().sendMessage(new At(sender).plus("»¹³é?»¹ÓĞ×êÂğ?¸øÄãÁ½·ÖÖÓÈ¥ë´Ò»µ¥"));
-                }
-            } else if (messageInString.contains("#Ê®Á¬")) {
-                if (Gashapon.isCool(sender.getId())) {
-                    Gashapon gashapon = new Gashapon(10, false);
-                    event.getSubject().sendMessage(new At(sender).plus(gashapon.getData()));
-                    Gashapon.refreshCoolDown(sender.getId());
-                } else {
-                    //·¢ËÍÀäÈ´ÌáÊ¾ÏûÏ¢
-                    event.getSubject().sendMessage(new At(sender).plus("³é¿¨³éµÄÄÇÃ´¿ì£¬ÈË¼Ò»áÊÜ²»ÁËµÄ"));
-                }
-            } else if (messageInString.contains("#¾®")) {
-                if (Gashapon.isCool(sender.getId())) {
-                    Gashapon gashapon = new Gashapon(300, false);
-                    event.getSubject().sendMessage(new At(sender).plus(gashapon.getData()));
-                    Gashapon.refreshCoolDown(sender.getId());
-                } else {
-                    //·¢ËÍÀäÈ´ÌáÊ¾ÏûÏ¢
-                    event.getSubject().sendMessage(new At(sender).plus("³é¿¨³éµÄÄÇÃ´¿ì£¬ÈË¼Ò»áÊÜ²»ÁËµÄ"));
-                }
-            } else if (messageInString.contains("#up¾®")) {
-                if (Gashapon.isCool(sender.getId())) {
-                    Gashapon gashapon = new Gashapon(300, true);
-                    event.getSubject().sendMessage(new At(sender).plus(gashapon.getData()));
-                    Gashapon.refreshCoolDown(sender.getId());
-                } else {
-                    //·¢ËÍÀäÈ´ÌáÊ¾ÏûÏ¢
-                    event.getSubject().sendMessage(new At(sender).plus("³é¿¨³éµÄÄÇÃ´¿ì£¬ÈË¼Ò»áÊÜ²»ÁËµÄ"));
-                }
-            } else if (messageInString.contains("#up³é¿¨ ")) {
-                if (Gashapon.isCool(sender.getId())) {
-                    String str = messageInString.replaceAll("#up³é¿¨ ", "");
-                    try {
-                        int q = Integer.parseInt(str);
-                        Gashapon gashapon = new Gashapon(q, true);
-                        event.getSubject().sendMessage(new At(sender).plus(gashapon.getData()));
-                        Gashapon.refreshCoolDown(sender.getId());
-                    } catch (NumberFormatException e) {
-                        event.getSubject().sendMessage(("Êı×Ö½âÎö´íÎó"));
-                    }
-                } else {
-                    //·¢ËÍÀäÈ´ÌáÊ¾ÏûÏ¢
-                    event.getSubject().sendMessage(new At(sender).plus("³é¿¨³éµÄÄÇÃ´¿ì£¬ÈË¼Ò»áÊÜ²»ÁËµÄ"));
-                }
-            } else if (messageInString.contains("#³é¿¨ ")) {
-                if (Gashapon.isCool(sender.getId())) {
-                    String str = messageInString.replaceAll("#³é¿¨ ", "");
-                    try {
-                        int q = Integer.parseInt(str);
-                        Gashapon gashapon = new Gashapon(q, false);
-                        event.getSubject().sendMessage(new At(sender).plus(gashapon.getData()));
-                        Gashapon.refreshCoolDown(sender.getId());
-                    } catch (NumberFormatException e) {
-                        event.getSubject().sendMessage(("Êı×Ö½âÎö´íÎó"));
-                    }
-                } else {
-                    //·¢ËÍÀäÈ´ÌáÊ¾ÏûÏ¢
-                    event.getSubject().sendMessage(new At(sender).plus("³é¿¨³éµÄÄÇÃ´¿ì£¬ÈË¼Ò»áÊÜ²»ÁËµÄ"));
-                }
-
-            }
-
-        }); // Ä£Äâ¿¨³Ø
-
-        this.getEventListener().subscribeAlways(GroupMessageEvent.class, (GroupMessageEvent event) -> {
-            if (event.getMessage().toString().contains("at") &&
-                    Objects.requireNonNull(event.getMessage().first(At.Key)).getTarget() == event.getBot().getId()) {
-                Random random = new Random();
-                random.setSeed(new Date().getTime());
-
-                if (event.getMessage().toString().contains("ÎÒ°®Äã")) {
-                    event.getSubject().sendMessage("ÇëÓÃÄãµÄÉËº¦À´±í´ïÄãµÄ°®");
-                    event.getSubject().sendMessage(getDamageString(query(event.getSender())[0], query(event.getSender())[1], event.getSender()));
-                    event.getSubject().sendMessage("¾ÍÕâË®Æ½?ÅÀ");
-                } else if (event.getMessage().toString().contains("Âè")) {
-                    event.getSubject().sendMessage(kimo_Definde[random.nextInt(kimo_Definde.length)]);
-                } else {
-                    event.getSubject().sendMessage(responseStr[random.nextInt(responseStr.length)]);
-                }
-            }
-        }); // Ğ´×ÅÍæ
-
-        this.getEventListener().subscribeAlways(GroupMessageEvent.class, (GroupMessageEvent event) -> {
-            if (event.getMessage().contentToString().equals("ÅÅÃû")) {
-                group.sendMessage(rank.query("¼å±ıÓ×¶ùÔ°"));
-            } else if (event.getMessage().contentToString().startsWith("ÅÅÃû ")) {
-                group.sendMessage(rank.query(event.getMessage().contentToString().replace("ÅÅÃû ", "")));
-            }
-        }); // »áÕ½ÅÅÃû²éÑ¯
-
-        this.getEventListener().subscribeAlways(GroupMessageEvent.class, (GroupMessageEvent event) -> {
-            if (event.getMessage().contentToString().equals("ĞÂÎÅ")) {
-                try {
-                    event.getSubject().sendMessage(feeder.last(group));
-                } catch (MalformedURLException e) {
-                    getLogger().error(e);
-                }
-            }
-        }); // ÊÖ¶¯¿´ĞÂÎÅ
-
-        JCommandManager.getInstance().register(this, new BlockingCommand(
-                "member", new ArrayList<>(), " ¹ÜÀíĞèÒª¼Çµ¶µÄ³ÉÔ± ", "/member remove/list"
-        ) {
-            @Override
-            public boolean onCommandBlocking(@NotNull CommandSender commandSender, @NotNull List<String> list) {
-                if (list.size() < 1) {
-                    return false;
-                }
-                switch (list.get(0)) {
-                    case "remove":
-                        if (list.size() < 2) {
-                            commandSender.sendMessageBlocking("/member remove ³ÉÔ±qq ");
-                            return true;
-                        }
-                        long qq = Long.parseLong(list.get(1).trim());
-                        try {
-                            con = DriverManager.getConnection("jdbc:mysql://127.0.0.1:3306/pcr", username, password);
-                            con.prepareStatement(String.format("delete from records where pcr.records.memberID=%d", qq)).executeUpdate();
-                            memberList.removeIf(member -> member.getId() == qq);
-                            commandSender.sendMessageBlocking(" ÒÆ³ı³É¹¦ ");
-                            con.close();
-                        } catch (Exception e) {
-                            commandSender.sendMessageBlocking(" ÒÆ³ıÊ§°Ü. ÊÇ·ñÒÑ¾­ÒÆ³ı? ");
-                            getLogger().warning(e);
-                            return false;
-                        }
-                        break; // ÒÆ³ı²»ĞèÒª¼Çµ¶µÄ³ÉÔ±
+        this.feeder = NewsFeeder.INSTANCE;
+        this.rank = Rank.INSTANCE;
+        one = data.getGashpon().getOne();
+        two = data.getGashpon().getTwo();
+        three = data.getGashpon().getThree();
+        noUpThree = data.getGashpon().getNoUpThree();
+        noUpTwo = data.getGashpon().getNoUpTwo();
+        noUpOne = data.getGashpon().getNoUpOne();
+        three_plus = data.getGashpon().getThree_plus();
+        two_plus = data.getGashpon().getTwo_plus();
+        one_plus = data.getGashpon().getOne_plus();
+        memberList = data.getMemberList();
+        username = data.getDataBase().getDBUserName();
+        password = data.getDataBase().getDBPassword();
+        groupID = data.getGroup();
+        rank.add("L.S.P.");
+        this.enabled = data.getClanSwitch();
+        this.ReminderSwitch = data.getReminderSwitch();
+        this.rankSwitch = data.getRankSwitch();
+        this.feederSwitch = data.getFeederSwitch();
+        Objects.requireNonNull(getScheduler()).delayed(4000, () -> group = Bot.getBotInstances().get(0).getGroup(groupID));
+        if (!username.equals("username")) {
+            try {
+                Class.forName("com.mysql.jdbc.Driver");
+                con = DriverManager.getConnection("jdbc:mysql://127.0.0.1:3306/pcr", username, password);
+                con.close();
+            } catch (Exception e) {
+                this.getLogger().error(e);
+                this.getLogger().error("è¯·åœ¨settings.yamlä¸­è®¾ç½®æ‚¨çš„mysqlè´¦å·åŠå¯†ç !");
+            }// åˆå§‹åŒ–æ•°æ®åº“è¿æ¥
+        }
 
 
-                    case "list":
-                        for (Member member : memberList) {
-                            try {
-                                commandSender.sendMessageBlocking(member.getNameCard());
-                            } catch (IllegalArgumentException e) {
-                                commandSender.sendMessageBlocking(member.getNick());
-                            }
-                        }
-                        break; // ²é¿´µ±Ç°¼Çµ¶µÄ³ÉÔ±
-                    default:
-                        return false;
-                }
-                return true;
-            }
-        });
-
-
-        JCommandManager.getInstance().register(this, new BlockingCommand(
-                "records", new ArrayList<>(), " ¹ÜÀíÊı¾İ¿âÊı¾İ ", "/records remove qq damage"
-        ) {
-            @Override
-            public boolean onCommandBlocking(@NotNull CommandSender commandSender, @NotNull List<String> list) {
-                if (list.size() < 1) {
-                    return false;
-                }
-                if ("remove".equals(list.get(0))) {
-                    if (list.size() < 2) {
-                        commandSender.sendMessageBlocking("/member remove ³ÉÔ±qq ³ÉÔ±ÉËº¦");
-                        return true;
-                    }
-                    long qq = Long.parseLong(list.get(1).trim());
-                    long damage = Long.parseLong(list.get(2).trim());
-                    try {
-                        con = DriverManager.getConnection("jdbc:mysql://127.0.0.1:3306/pcr", username, password);
-                        con.prepareStatement(String.format("delete " +
-                                        "from records " +
-                                        "where pcr.records.memberID=%d " +
-                                        "and pcr.records.damage=%d",
-                                qq,
-                                damage)).executeUpdate();
-                        commandSender.sendMessageBlocking(" ÒÆ³ı³É¹¦ ");
-                        con.close();
-                    } catch (Exception e) {
-                        commandSender.sendMessageBlocking(" ÒÆ³ıÊ§°Ü. ÊÇ·ñÒÑ¾­ÒÆ³ı? ");
-                        return false;
-                    }
-                    // ÒÆ³ı¼ÇÂ¼´íÎóµÄ¼ÇÂ¼
-                } else {
-                    return false;
-                }
-                return true;
-            }
-        });
-
-        JCommandManager.getInstance().register(this, new BlockingCommand(
-                "reminder", new ArrayList<>(), " ¿ª¹ØÂòÒ©ÌáĞÑ ", "/reminder [enable/disable]"
-        ) {
-            @Override
-            public boolean onCommandBlocking(@NotNull CommandSender commandSender, @NotNull List<String> list) {
-                if (list.size() < 1) {
-                    return false;
-                }
-                if ("enable".equals(list.get(0))) {
-                    if (list.size() > 3) {
-                        commandSender.sendMessageBlocking("/reminder [enable/disable]");
-                        return false;
-                    }
-                    settings.set("Reminder", Boolean.TRUE);
-                    ReminderSwitch = true;
-                    settings.save();
-                    try {
-                        imgReminder = group.uploadImage(new File("./plugins/test/reminder.jpg"));
-                        group.sendMessage(imgReminder);
-                        commandSender.sendMessageBlocking(" ¿ªÆô³É¹¦ ");
-                        return true;
-                    } catch (Exception e) {
-                        commandSender.sendMessageBlocking(" ¿ªÆôÊ§°Ü. Çë¼ì²éÍ¼Æ¬ÊÇ·ñÔÚÕıÈ·Â·¾¶ÏÂ?");
-                        getLogger().error(e);
-                        settings.set("Reminder", Boolean.FALSE);
-                        ReminderSwitch = false;
-                        settings.save();
-                        return false;
-                    }
-                    // ÒÆ³ı¼ÇÂ¼´íÎóµÄ¼ÇÂ¼
-                } else if ("disable".equals(list.get(0))) {
-                    settings.set("Reminder", Boolean.FALSE);
-                    ReminderSwitch = false;
-                    settings.save();
-                    return true;
-                } else {
-                    return false;
-                }
-            }
-        });
-
-        Objects.requireNonNull(getScheduler()).repeat(() -> {
+        Objects.requireNonNull(getScheduler()).repeating(60000, () -> {
             if ((Calendar.getInstance().get(Calendar.HOUR_OF_DAY) == 6 ||
                     Calendar.getInstance().get(Calendar.HOUR_OF_DAY) == 0 ||
                     Calendar.getInstance().get(Calendar.HOUR_OF_DAY) == 12 ||
@@ -449,28 +102,28 @@ class pcrMain extends PluginBase {
                 group.sendMessage(imgReminder);
             }
             this.getLogger().debug("checking time");
-        }, 60000); // Ê¹ÓÃ×î±¿µÄ·½·¨ÊµÏÖ×Ô¶¯²éµ¶, ÂòÒ©ÌáĞÑ
+        }); // ä½¿ç”¨æœ€ç¬¨çš„æ–¹æ³•å®ç°è‡ªåŠ¨æŸ¥åˆ€, ä¹°è¯æé†’
 
-        getScheduler().delay(() -> Objects.requireNonNull(getScheduler()).repeat(() -> {
+        getScheduler().delayed(4000, () -> Objects.requireNonNull(getScheduler()).repeating(600000, () -> {
             try {
                 if (rankSwitch) {
                     rank.update();
                 }
 
                 if (feeder.unread() && feederSwitch) {
-                    getLogger().debug("¼ì²éµ½¸üĞÂ");
+                    getLogger().debug("æ£€æŸ¥åˆ°æ›´æ–°");
                     for (Message msg : feeder.fetch(group)) {
                         group.sendMessage(msg);
                         getLogger().debug(msg.contentToString());
                     }
                 }
-                this.getLogger().debug("¼ì²é¶¯Ì¬¸üĞÂ");
+                this.getLogger().debug("æ£€æŸ¥åŠ¨æ€æ›´æ–°");
             } catch (Exception e) {
                 e.printStackTrace();
             }
-        }, 600000), 4000);
+        }));
 
-        getScheduler().delay(() -> Objects.requireNonNull(getScheduler()).repeat(() -> {
+        getScheduler().delayed(4000, () -> Objects.requireNonNull(getScheduler()).repeating(1800000, () -> {
             if (rankSwitch) {
                 MessageChainBuilder builder = new MessageChainBuilder();
                 try {
@@ -479,178 +132,41 @@ class pcrMain extends PluginBase {
                             rank.clanName.keySet()) {
                         builder.add(rank.query(clanname));
                     }
-                    this.getLogger().debug("¼ì²éÅÅÃû¸üĞÂ");
+                    this.getLogger().debug("æ£€æŸ¥æ’åæ›´æ–°");
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
                 group.sendMessage(builder.asMessageChain());
             }
-        }, 1800000), 4000);
+        }));
 
-        JCommandManager.getInstance().register(this, new BlockingCommand(
-                "²éµ¶", new ArrayList<>(), " ²âÊÔÓÃ ", ""
-        ) {
-            @Override
-            public boolean onCommandBlocking(@NotNull CommandSender commandSender, @NotNull List<String> list) {
-                LinkedList<Member> loudao = queryAll();
-                MessageChainBuilder msg = new MessageChainBuilder();
-                msg.add("ÑÀ°×µÂË¹ÄÚ,½ñÌì");
-                for (Member nmsl : loudao) {
-                    msg.add(new At(nmsl));
-                    msg.add(", ");
-                }
-                msg.add("»¹Ã»ÓĞ³öÂúÈıµ¶,Çë½ÓÊÜÖÆ²Ã~~~");
-                getLogger().debug(msg.toString());
-                return true;
-            }
-        }); //todo: Ìí¼ÓÉ¾³ı×Ô¶¯ÅÅÃû²éÑ¯¹«»á
+        Events.registerEvents(ClanListener.INSTANCE);
+        Events.registerEvents(GashaponListener.INSTANCE);
+        Events.registerEvents(NewsFeederListener.INSTANCE);
+        Events.registerEvents(RankListener.INSTANCE);
 
-        JCommandManager.getInstance().register(this, new BlockingCommand(
-                "rank", new ArrayList<>(), " ¿ª¹ØÅÅÃû×Ô¶¯²éÑ¯ ", "/rank"
-        ) {
-            @Override
-            public boolean onCommandBlocking(@NotNull CommandSender commandSender, @NotNull List<String> list) {
-                if (list.size() > 0) {
-                    commandSender.sendMessageBlocking(getUsage());
-                } else {
-                    rankSwitch = !rankSwitch;
-                    getLogger().debug("×Ô¶¯ÅÅÃûÒÑ" + (rankSwitch ? "¿ªÆô" : "¹Ø±Õ"));
-                    commandSender.sendMessageBlocking("×Ô¶¯ÅÅÃûÒÑ" + (rankSwitch ? "¿ªÆô" : "¹Ø±Õ"));
-                }
-                return true;
-            }
-        });
-
-        JCommandManager.getInstance().register(this, new BlockingCommand(
-                "feed", new ArrayList<>(), " ¿ª¹ØĞÂÎÅÍÆËÍ ", "/feed"
-        ) {
-            @Override
-            public boolean onCommandBlocking(@NotNull CommandSender commandSender, @NotNull List<String> list) {
-                if (list.size() > 0) {
-                    commandSender.sendMessageBlocking(getUsage());
-                } else {
-                    feederSwitch = !feederSwitch;
-                    getLogger().debug("×Ô¶¯ÅÅÃûÒÑ" + (feederSwitch ? "¿ªÆô" : "¹Ø±Õ"));
-                    commandSender.sendMessageBlocking("×Ô¶¯ÅÅÃûÒÑ" + (feederSwitch ? "¿ªÆô" : "¹Ø±Õ"));
-                }
-                return true;
-            }
-        });
+        CommandManager.INSTANCE.registerCommand(ClanMemberCommand.INSTANCE, true);
+        CommandManager.INSTANCE.register(ClanRecordsCommand.INSTANCE, true);
+        CommandManager.INSTANCE.register(RankCommand.INSTANCE, true);
+        CommandManager.INSTANCE.register(NewsFeederCommand.INSTANCE, true);
+        CommandManager.INSTANCE.register(ReminderCommand.INSTANCE, true);
 
 
-        this.getLogger().info("¼Çµ¶Æ÷ÒÑ¾ÍĞ÷");
-    } // ×¢²á¼àÌıÆ÷ÃÇ todo: Ä£¿é»¯
-
-    /**
-     * ²éÑ¯ÌØ¶¨³ÉÔ±µ±ÌìµÄ³öµ¶Çé¿ö
-     *
-     * @param temp ´ı²éÑ¯µÄ³ÉÔ±
-     * @return {³öµ¶Êı, ×ÜÉËº¦}
-     */
-    private long[] query(Member temp) {
-        long count = 0;
-        long totalDamage = 0;
-        try {
-            con = DriverManager.getConnection("jdbc:mysql://127.0.0.1:3306/pcr", username, password);
-            long qq = temp.getId();
-            Calendar date = Calendar.getInstance();
-            PreparedStatement sql;
-            sql = con.prepareStatement("select -sum(isFinal-1), sum(damage) from records where memberID=? and date=?");
-            sql.setInt(2, date.get(Calendar.HOUR_OF_DAY) >= 5 ? date.get(Calendar.DATE) : date.get(Calendar.DATE) - 1);
-            sql.setLong(1, qq);
-            ResultSet rs = sql.executeQuery();
-            this.getLogger().info("²éÑ¯Êı¾İ¿â...");
-            rs.next();
-            totalDamage = rs.getLong(2);
-            count = rs.getInt(1);
-            con.close();
-        } catch (SQLException e) {
-            e.printStackTrace();
-            temp.getGroup().sendMessage("²éÑ¯Ê§°Ü");
-        }  // ²éÑ¯µ¥ÈËµ¥ÈÕ¼ÇÂ¼
-        return new long[]{count, totalDamage};
-    } // µ¥ÈË²éµ¶µÄÊµÏÖ
-
-    /**
-     * ¼Çµ¶Æ÷µÄ³õÊ¼»¯
-     *
-     * @param event ÉÏÏÂÎÄ
-     */
-    private void jidaoStart(GroupMessageEvent event) throws SQLException {
-        con = DriverManager.getConnection("jdbc:mysql://127.0.0.1:3306/pcr", username, password);
-        this.getLogger().info("¿ªÊ¼¼Çµ¶");
-        this.getLogger().debug(enabled + " " + this.settings.getLong("Group"));
-        this.enabled = true;
-        this.settings.set("Group", event.getGroup().getId());
-        this.settings.save();
-        for (Member i : event.getGroup().getMembers()) {
-            if (i != null) {
-                memberList.add(i);
-                getLogger().debug(getNameCard(i));
-            }
-        }
-        for (long qq : QqExclude) {
-            try {
-                con.prepareStatement(String.format("delete from records where pcr.records.memberID=%d", qq)).executeUpdate();
-                memberList.removeIf(member -> member.getId() == qq);
-            } catch (Exception e) {
-                getLogger().debug(e);
-            }
-        }
-        con.close();
-    }
+        this.getLogger().info("è®°åˆ€å™¨å·²å°±ç»ª");
+    } // æ³¨å†Œç›‘å¬å™¨ä»¬ todo: æ¨¡å—åŒ–
 
 
     /**
-     * È«Ô±²éµ¶,·¢ËÍÏûÏ¢
+     * å› ä¸ºapié‡Œçš„nameCardOrNickè°ƒç”¨ä¸äº†,æ‰‹åŠ¨å†™ä¸€ä¸ªå› ä¸ºapié‡Œçš„nameCardOrNickè°ƒç”¨ä¸äº†,æ‰‹åŠ¨å†™ä¸€ä¸ª
      *
-     * @return ·µ»ØÃ»ÓĞ´òÂúÈıµ¶µÄ³ÉÔ±
-     */
-    public LinkedList<Member> queryAll() {
-        long totalDamage;
-        LinkedList<Member> loudao = new LinkedList<>();
-        long count;
-        MessageChainBuilder msg = new MessageChainBuilder();
-        for (Member member : memberList) {
-            count = 0;
-            try {
-                count = query(member)[0];
-                totalDamage = query(member)[1];
-                msg.add(getDamageString(count, totalDamage, member) + "\n");
-                this.getLogger().info("²éÑ¯Íê³É" + getDamageString(count, totalDamage, member));
-            } catch (Exception e) {
-                e.printStackTrace();
-                this.getLogger().error("²éÑ¯Ê§°Ü" + e);
-            }
-            if (count < 3) {
-                loudao.add(member);
-            }
-        }
-        group.sendMessage(msg.asMessageChain());
-        return loudao;
-    } // È«Ô±²éµ¶µÄÊµÏÖ
-
-    /**
-     * ÒòÎªapiÀïµÄnameCardOrNickµ÷ÓÃ²»ÁË,ÊÖ¶¯Ğ´Ò»¸öÒòÎªapiÀïµÄnameCardOrNickµ÷ÓÃ²»ÁË,ÊÖ¶¯Ğ´Ò»¸ö
-     *
-     * @param temp ³ÉÔ±
-     * @return ³ÉÔ±ÈºÃûÆ¬, Îª¿ÕÊ±·µ»ØêÇ³Æ
+     * @param temp æˆå‘˜
+     * @return æˆå‘˜ç¾¤åç‰‡, ä¸ºç©ºæ—¶è¿”å›æ˜µç§°
      */
     public String getNameCard(Member temp) {
         return (temp.getNameCard().equals("") ? temp.getNick() : temp.getNameCard());
     }
 
-    /**
-     * ×éÖ¯²éµ¶ÏûÏ¢
-     *
-     * @param count  ³öµÀ´ÎÊı
-     * @param damage ÉËº¦
-     * @param member ³ÉÔ±
-     * @return ×éÖ¯ºÃµÄ×Ö·û´®
-     */
-    public String getDamageString(long count, long damage, Member member) {
-        return ("½ñÌì" + getNameCard(member) + "¹²³ö" + count + "µ¶, " + "Ôì³É" + damage + "µãÉËº¦, Ô¼" + damage / 80000 + "µ­");
-    }
+
 }
-// todo: Ê¹ÓÃexcel»òÍøÒ³Õ¹Ê¾Í³¼ÆÊı¾İ
-// todo: ¶àÈºÖ§³Ö
+// todo: ä½¿ç”¨excelæˆ–ç½‘é¡µå±•ç¤ºç»Ÿè®¡æ•°æ®
+// todo: å¤šç¾¤æ”¯æŒ
