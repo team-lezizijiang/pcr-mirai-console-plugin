@@ -1,12 +1,10 @@
 package com.viger.plugin;
 
 import com.viger.plugin.commands.*;
-import com.viger.plugin.listensers.ClanListener;
-import com.viger.plugin.listensers.GashaponListener;
-import com.viger.plugin.listensers.NewsFeederListener;
-import com.viger.plugin.listensers.RankListener;
+import com.viger.plugin.listensers.*;
 import net.mamoe.mirai.Bot;
 import net.mamoe.mirai.console.command.CommandManager;
+import net.mamoe.mirai.console.extension.PluginComponentStorage;
 import net.mamoe.mirai.console.plugin.jvm.JavaPlugin;
 import net.mamoe.mirai.console.plugin.jvm.JvmPluginDescriptionBuilder;
 import net.mamoe.mirai.contact.Group;
@@ -15,6 +13,7 @@ import net.mamoe.mirai.event.Events;
 import net.mamoe.mirai.message.data.Image;
 import net.mamoe.mirai.message.data.Message;
 import net.mamoe.mirai.message.data.MessageChainBuilder;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.sql.Connection;
@@ -42,22 +41,25 @@ public class pcrMain extends JavaPlugin {
     public Image imgReminder; // 小助手资源
     public NewsFeeder feeder; // 新闻订阅器
     public Rank rank;
+    public Status status;
     public Connection con;// 数据库链接
 
     public pcrMain() {
         super(new JvmPluginDescriptionBuilder("xyz.viger.pcrplugin", "1.0.0-dev-1").author("viger").build());
     }
 
-
-    public void onLoad() {
+    @Override
+    public void onLoad(@NotNull PluginComponentStorage $this$onLoad) {
         reloadPluginConfig(data);
 
     }
 
     @Override
     public void onEnable() {
+        reloadPluginConfig(data);
         this.feeder = NewsFeeder.INSTANCE;
         this.rank = Rank.INSTANCE;
+        this.status = Status.INSTANCE;
         one = data.getGashpon().getOne();
         two = data.getGashpon().getTwo();
         three = data.getGashpon().getThree();
@@ -144,6 +146,7 @@ public class pcrMain extends JavaPlugin {
         Events.registerEvents(GashaponListener.INSTANCE);
         Events.registerEvents(NewsFeederListener.INSTANCE);
         Events.registerEvents(RankListener.INSTANCE);
+        Events.registerEvents(StatusListener.INSTANCE);
 
         CommandManager.INSTANCE.registerCommand(ClanMemberCommand.INSTANCE, true);
         CommandManager.INSTANCE.register(ClanRecordsCommand.INSTANCE, true);

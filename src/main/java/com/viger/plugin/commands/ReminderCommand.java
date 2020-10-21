@@ -27,7 +27,7 @@ public class ReminderCommand extends JCompositeCommand {
         if (!plugin.ReminderSwitch) {
             plugin.ReminderSwitch = true;
             try {
-                plugin.imgReminder = pcrMain.group.uploadImage(new File("./plugins/test/reminder.jpg"));
+                plugin.imgReminder = pcrMain.group.uploadImage(new File("./config/xyz.viger.pcrplugin/reminder.jpg"));
                 pcrMain.group.sendMessage(plugin.imgReminder);
                 commandSender.sendMessage(" 开启成功 ");
                 plugin.getLogger().info("reminder on");
