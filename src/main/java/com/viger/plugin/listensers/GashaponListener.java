@@ -24,7 +24,6 @@ public class GashaponListener extends SimpleListenerHost {
     public void onMessage(@NotNull GroupMessageEvent event) {
         String messageInString = event.getMessage().contentToString();
         Member sender = event.getSender();
-        plugin.getLogger().info(plugin.getNameCard(sender) + ':' + messageInString);
         if (messageInString.contains("#up十连")) {
             if (Gashapon.isCool(sender.getId())) {
                 Gashapon gashapon = new Gashapon(10, true);

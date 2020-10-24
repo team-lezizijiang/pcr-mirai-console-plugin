@@ -32,6 +32,7 @@ public class pcrMain extends JavaPlugin {
     public final PcrData data = PcrData.INSTANCE; // 配置文件
     public String username;
     public String password;
+    public String cookie; // bigfun cookie
     public Set<Long> memberList; // 记刀的成员列表
     public boolean enabled; // 团队战开关
     public Long groupID;
@@ -41,11 +42,11 @@ public class pcrMain extends JavaPlugin {
     public Image imgReminder; // 小助手资源
     public NewsFeeder feeder; // 新闻订阅器
     public Rank rank;
-    public Status status;
+    public ClanBattle status;
     public Connection con;// 数据库链接
 
     public pcrMain() {
-        super(new JvmPluginDescriptionBuilder("xyz.viger.pcrplugin", "1.0.0-dev-1").author("viger").build());
+        super(new JvmPluginDescriptionBuilder("xyz.viger.pcrplugin", "1.0.0-dev-2").author("viger").build());
     }
 
     @Override
@@ -57,9 +58,6 @@ public class pcrMain extends JavaPlugin {
     @Override
     public void onEnable() {
         reloadPluginConfig(data);
-        this.feeder = NewsFeeder.INSTANCE;
-        this.rank = Rank.INSTANCE;
-        this.status = Status.INSTANCE;
         one = data.getGashpon().getOne();
         two = data.getGashpon().getTwo();
         three = data.getGashpon().getThree();
@@ -72,13 +70,19 @@ public class pcrMain extends JavaPlugin {
         memberList = data.getMemberList();
         username = data.getDataBase().getDBUserName();
         password = data.getDataBase().getDBPassword();
+        cookie = data.getCookie();
         groupID = data.getGroup();
-        rank.add("L.S.P.");
         this.enabled = data.getClanSwitch();
         this.ReminderSwitch = data.getReminderSwitch();
         this.rankSwitch = data.getRankSwitch();
         this.feederSwitch = data.getFeederSwitch();
-        Objects.requireNonNull(getScheduler()).delayed(4000, () -> group = Bot.getBotInstances().get(0).getGroup(groupID));
+        Objects.requireNonNull(getScheduler()).delayed(4000, () -> {
+            group = Bot.getBotInstances().get(0).getGroup(groupID);
+            this.feeder = NewsFeeder.INSTANCE;
+            this.rank = Rank.INSTANCE;
+            this.status = ClanBattle.INSTANCE;
+            rank.add("L.S.P.");
+        }); //延时初始化
         if (!username.equals("username")) {
             try {
                 Class.forName("com.mysql.jdbc.Driver");
@@ -91,7 +95,13 @@ public class pcrMain extends JavaPlugin {
         }
 
 
-        Objects.requireNonNull(getScheduler()).repeating(60000, () -> {
+        getScheduler().delayed(5000, () -> getScheduler().repeating(60000, () -> {
+            try {
+                status.update();
+            } catch (Exception e) {
+                this.getLogger().error(e);
+            }
+            this.getLogger().debug("checking time");
             if ((Calendar.getInstance().get(Calendar.HOUR_OF_DAY) == 6 ||
                     Calendar.getInstance().get(Calendar.HOUR_OF_DAY) == 0 ||
                     Calendar.getInstance().get(Calendar.HOUR_OF_DAY) == 12 ||
@@ -99,14 +109,14 @@ public class pcrMain extends JavaPlugin {
                     Calendar.getInstance().get(Calendar.MINUTE) == 0 &&
                     ReminderSwitch) {
                 if (imgReminder == null) {
-                    imgReminder = group.uploadImage(new File("./plugins/test/reminder.jpg"));
+                    imgReminder = group.uploadImage(new File("./config/xyz.viger.pcrplugin/reminder.jpg"));
                 }
                 group.sendMessage(imgReminder);
             }
             this.getLogger().debug("checking time");
-        }); // 使用最笨的方法实现自动查刀, 买药提醒
+        })); // 使用最笨的方法实现自动查刀, 买药提醒
 
-        getScheduler().delayed(4000, () -> Objects.requireNonNull(getScheduler()).repeating(600000, () -> {
+        getScheduler().delayed(5000, () -> Objects.requireNonNull(getScheduler()).repeating(600000, () -> {
             try {
                 if (rankSwitch) {
                     rank.update();
@@ -125,7 +135,7 @@ public class pcrMain extends JavaPlugin {
             }
         }));
 
-        getScheduler().delayed(4000, () -> Objects.requireNonNull(getScheduler()).repeating(1800000, () -> {
+        getScheduler().delayed(5000, () -> Objects.requireNonNull(getScheduler()).repeating(1800000, () -> {
             if (rankSwitch) {
                 MessageChainBuilder builder = new MessageChainBuilder();
                 try {

@@ -14,7 +14,7 @@ public class StatusListener extends SimpleListenerHost {
     @EventHandler
     public void onMessage(GroupMessageEvent event) {
         if (event.getMessage().contentToString().equals("状态")) {
-            event.getSubject().sendMessage(plugin.status.query(""));
+            event.getSubject().sendMessage(plugin.status.query());
         }
     }
 

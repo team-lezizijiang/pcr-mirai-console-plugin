@@ -8,6 +8,7 @@ object PcrData : AutoSavePluginConfig("Pcr") {
     val clanSwitch: Boolean by value(false)
     val group: Long by value(1091221719L)
     val rankSwitch: Boolean by value(true)
+    val cookie: String by value("sid=5hsmuqp9; DedeUserID=12931312; DedeUserID__ckMd5=c4c255f8f534bf24; SESSDATA=d7daff29%2C1616689534%2C0f1f9*91; bili_jct=a1f310c738dab5858c2e63f47e0855e4; session-api=6305edelp16eojkl09k0al4phq; _csrf=qtzT1ebnxEws8NZ7_Nvl4_gS")
     val reminderSwitch: Boolean by value(true)
     val feederSwitch: Boolean by value(true)
     val gashpon: Gashpon by value()

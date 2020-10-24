@@ -1,5 +1,7 @@
 package com.viger.plugin.listensers;
 
+import com.viger.plugin.ClanBattle;
+import com.viger.plugin.damageByMember;
 import com.viger.plugin.pcrMain;
 import kotlin.coroutines.CoroutineContext;
 import net.mamoe.mirai.Bot;
@@ -124,6 +126,13 @@ public class ClanListener extends SimpleListenerHost {
                 event.getSubject().sendMessage(kimo_Definde[random.nextInt(kimo_Definde.length)]);
             } else {
                 event.getSubject().sendMessage(responseStr[random.nextInt(responseStr.length)]);
+            }
+        }
+
+        if (messageInString.equals("查刀")) {
+            plugin.status.update();
+            for (damageByMember i : ClanBattle.INSTANCE.getRecords()) {
+                event.getSubject().sendMessage(i.getName() + "已经出了" + i.getNumber() + "刀");
             }
         }
     } // 团队战
