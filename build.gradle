@@ -17,7 +17,7 @@ repositories {
 }
 
 def miraiCoreVersion = "+" // 1.0.1
-def miraiConsoleVersion = "+" // 0.5.2
+def miraiConsoleVersion = "1.0-RC-dev-29" // 0.5.2
 
 dependencies {
     implementation 'org.jetbrains:annotations:19.0.0'

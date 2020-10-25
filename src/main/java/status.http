@@ -1,30 +1,30 @@
 ###
 
-# curl 'https://www.bigfun.cn/api/feweb?target=gzlj-clan-day-report-collect%2Fa'
+# curl 'https://www.bigfun.cn/api/feweb?target=gzlj-clan-day-report%2Fa&date=2020-10-23&size=30'
 #  -H 'Connection: keep-alive'
 #  -H 'Accept: application/json, text/plain, */*'
 #  -H 'DNT: 1'
-#  -H 'x-csrf-token: gUFESriu-mFmXq9htUxBbuzKNJ8VXwuzFP8U'
-#  -H 'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.80 Safari/537.36 Edg/86.0.622.43'
+#  -H 'x-csrf-token: Le6WmGmr-k06cUOjEGvfUGDIunkX3n-jErhc'
+#  -H 'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.111 Safari/537.36 Edg/86.0.622.51'
 #  -H 'Sec-Fetch-Site: same-origin'
 #  -H 'Sec-Fetch-Mode: cors'
 #  -H 'Sec-Fetch-Dest: empty'
 #  -H 'Referer: https://www.bigfun.cn/tools/pcrteam/d_report'
 #  -H 'Accept-Language: zh-CN,zh;q=0.9,en;q=0.8,ja;q=0.7'
-#  -H 'Cookie: sid=5hsmuqp9; DedeUserID=12931312; DedeUserID__ckMd5=c4c255f8f534bf24; SESSDATA=d7daff29%2C1616689534%2C0f1f9*91; bili_jct=a1f310c738dab5858c2e63f47e0855e4; session-api=6305edelp16eojkl09k0al4phq; _csrf=qtzT1ebnxEws8NZ7_Nvl4_gS'
+#  -H 'Cookie: sid=5hsmuqp9; DedeUserID=12931312; DedeUserID__ckMd5=c4c255f8f534bf24; SESSDATA=d7daff29%2C1616689534%2C0f1f9*91; bili_jct=a1f310c738dab5858c2e63f47e0855e4; session-api=6305edelp16eojkl09k0al4phq; _csrf=wzktjPmUwMkPFen6t-6wsv5Q'
 #  --compressed
-GET https://www.bigfun.cn/api/feweb?target=gzlj-clan-day-report-collect%2Fa
+GET https://www.bigfun.cn/api/feweb?target=gzlj-clan-day-report%2Fa&date=2020-10-23&size=30
 Connection: keep-alive
 Accept: application/json, text/plain, */*
 DNT: 1
-x-csrf-token: gUFESriu-mFmXq9htUxBbuzKNJ8VXwuzFP8U
-User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.80 Safari/537.36 Edg/86.0.622.43
+x-csrf-token: Le6WmGmr-k06cUOjEGvfUGDIunkX3n-jErhc
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.111 Safari/537.36 Edg/86.0.622.51
 Sec-Fetch-Site: same-origin
 Sec-Fetch-Mode: cors
 Sec-Fetch-Dest: empty
 Referer: https://www.bigfun.cn/tools/pcrteam/d_report
 Accept-Language: zh-CN,zh;q=0.9,en;q=0.8,ja;q=0.7
-Cookie: sid=5hsmuqp9; DedeUserID=12931312; DedeUserID__ckMd5=c4c255f8f534bf24; SESSDATA=d7daff29%2C1616689534%2C0f1f9*91; bili_jct=a1f310c738dab5858c2e63f47e0855e4; session-api=6305edelp16eojkl09k0al4phq; _csrf=qtzT1ebnxEws8NZ7_Nvl4_gS
+Cookie: sid=5hsmuqp9; DedeUserID=12931312; DedeUserID__ckMd5=c4c255f8f534bf24; SESSDATA=d7daff29%2C1616689534%2C0f1f9*91; bili_jct=a1f310c738dab5858c2e63f47e0855e4; session-api=6305edelp16eojkl09k0al4phq; _csrf=wzktjPmUwMkPFen6t-6wsv5Q
 
 ###
 

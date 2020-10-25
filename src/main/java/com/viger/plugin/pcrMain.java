@@ -116,7 +116,7 @@ public class pcrMain extends JavaPlugin {
             this.getLogger().debug("checking time");
         })); // 使用最笨的方法实现自动查刀, 买药提醒
 
-        getScheduler().delayed(5000, () -> Objects.requireNonNull(getScheduler()).repeating(600000, () -> {
+        getScheduler().delayed(5000, () -> getScheduler().repeating(600000, () -> {
             try {
                 if (rankSwitch) {
                     rank.update();
@@ -135,7 +135,7 @@ public class pcrMain extends JavaPlugin {
             }
         }));
 
-        getScheduler().delayed(5000, () -> Objects.requireNonNull(getScheduler()).repeating(1800000, () -> {
+        getScheduler().delayed(5000, () -> getScheduler().repeating(1800000, () -> {
             if (rankSwitch) {
                 MessageChainBuilder builder = new MessageChainBuilder();
                 try {

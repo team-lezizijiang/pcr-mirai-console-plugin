@@ -10,12 +10,13 @@ import net.mamoe.mirai.message.data.MessageChainBuilder;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.Serializable;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.sql.Timestamp;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.TimeZone;
 
 public class ClanBattle {
 
@@ -29,10 +30,18 @@ public class ClanBattle {
     Long total_life;
     int ranking;
     long timestamp;
+    int total_damage_num;
 
     private ClanBattle() {
         super();
-        update();
+    }
+
+    public int getTotal_damage_num() {
+        return total_damage_num;
+    }
+
+    public void setTotal_damage_num(int total_damage_num) {
+        this.total_damage_num = total_damage_num;
     }
 
     public List<damageByMember> getRecords() {
@@ -124,9 +133,13 @@ public class ClanBattle {
                 INSTANCE.setTimestamp(timestamp);
                 pcrMain.group.sendMessage(new Gson().fromJson(js, record.class).toString());
                 getStatus();
-                getRecords("");
+                getRecordsList();
             }
         }
+        setTotal_damage_num(JsonParser.parseString(
+                content.toString()).getAsJsonObject()
+                .get("data").getAsJsonObject()
+                .get("total_damage_num").getAsInt());
 
 
     }
@@ -193,17 +206,21 @@ public class ClanBattle {
     }
 
 
-    public void getRecords(String cookies) {
+    public void getRecordsList() {
         StringBuilder content = new StringBuilder();
         List<damageByMember> result = new ArrayList<>();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+        sdf.setTimeZone(TimeZone.getTimeZone("GMT+3:00"));
 
         try {
-            URL url = new URL("https://www.bigfun.cn/api/feweb?target=gzlj-clan-day-report%2Fa&date=2020-10-23&size=30");
+            URL url = new URL("https://www.bigfun.cn/api/feweb?target=gzlj-clan-day-report%2Fa&date="
+                    + sdf.format(new Date())
+                    + "&size=30");
             HttpURLConnection con = (HttpURLConnection) url.openConnection();
             con.setRequestMethod("GET");
             con.setDoOutput(true);
             con.setRequestProperty("Content-Type", "application/json");
-            con.setRequestProperty("Cookie", cookies.equals("") ? "sid=5hsmuqp9; DedeUserID=12931312; DedeUserID__ckMd5=c4c255f8f534bf24; SESSDATA=d7daff29%2C1616689534%2C0f1f9*91; bili_jct=a1f310c738dab5858c2e63f47e0855e4; session-api=6305edelp16eojkl09k0al4phq; _csrf=qtzT1ebnxEws8NZ7_Nvl4_gS" : cookies);
+            con.setRequestProperty("Cookie", cookie);
             con.setRequestProperty("Referer", "https://www.bigfun.cn/tools/pcrteam/d_report");
             con.setRequestProperty("Accept-Language", "zh-CN,zh;q=0.9,en;q=0.8,ja;q=0.7");
             BufferedReader in = new BufferedReader(
@@ -227,86 +244,6 @@ public class ClanBattle {
         }
 
         INSTANCE.setRecords(result);
-    }
-}
-
-class record implements Serializable {
-    Long datetime;
-    String name;
-    String boss_name;
-    int lap_num;
-    long damage;
-    int kill;
-    int reimburse;
-    long score;
-
-    public Timestamp getDatetime() {
-        return new Timestamp(datetime * 1000);
-    }
-
-    public void setDatetime(Timestamp datetime) {
-        this.datetime = datetime.getTime() / 1000;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getBoss_name() {
-        return boss_name;
-    }
-
-    public void setBoss_name(String boss_name) {
-        this.boss_name = boss_name;
-    }
-
-    public int getLap_num() {
-        return lap_num;
-    }
-
-    public void setLap_num(int lap_num) {
-        this.lap_num = lap_num;
-    }
-
-    public long getDamage() {
-        return damage;
-    }
-
-    public void setDamage(long damage) {
-        this.damage = damage;
-    }
-
-    public int getKill() {
-        return kill;
-    }
-
-    public void setKill(int kill) {
-        this.kill = kill;
-    }
-
-    public int getReimburse() {
-        return reimburse;
-    }
-
-    public void setReimburse(int reimburse) {
-        this.reimburse = reimburse;
-    }
-
-    public long getScore() {
-        return score;
-    }
-
-    public void setScore(long score) {
-        this.score = score;
-    }
-
-    @Override
-    public String toString() {
-        return name + "在" + new Timestamp(datetime * 1000).toLocaleString() + "对" + boss_name + "造成了" + damage + "伤害" + " " + (kill == 1 ? "尾刀" : "") + (reimburse == 1 ? "补偿刀" : "");
     }
 }
 

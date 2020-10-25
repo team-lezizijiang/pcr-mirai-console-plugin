@@ -3,6 +3,7 @@ package com.viger.plugin.listensers;
 import com.viger.plugin.ClanBattle;
 import com.viger.plugin.damageByMember;
 import com.viger.plugin.pcrMain;
+import com.viger.plugin.record;
 import kotlin.coroutines.CoroutineContext;
 import net.mamoe.mirai.Bot;
 import net.mamoe.mirai.contact.Member;
@@ -131,9 +132,22 @@ public class ClanListener extends SimpleListenerHost {
 
         if (messageInString.equals("查刀")) {
             plugin.status.update();
+            event.getSubject().sendMessage("今天已经出了" + ClanBattle.INSTANCE.getTotal_damage_num() + "刀");
             for (damageByMember i : ClanBattle.INSTANCE.getRecords()) {
-                event.getSubject().sendMessage(i.getName() + "已经出了" + i.getNumber() + "刀");
+                if (i.getNumber() < 3) {
+                    event.getSubject().sendMessage(i.getName() + "已经出了" + i.getNumber() + "刀");
+                }
             }
+        } else if (event.getMessage().toString().contains("查刀 ")) {
+            for (damageByMember i : ClanBattle.INSTANCE.getRecords()) {
+                if (i.getName().contains(messageInString.replace("查刀 ", ""))) {
+                    event.getSubject().sendMessage(i.getName() + "已经出了" + i.getNumber() + "刀, 造成了" + i.getDamage() + "伤害， 得分" + i.getScore());
+                    for (record r : i.getDamage_list()) {
+                        event.getSubject().sendMessage(r.toString());
+                    }
+                }
+            }
+
         }
     } // 团队战
 
@@ -171,7 +185,7 @@ public class ClanListener extends SimpleListenerHost {
     /**
      * 组织查刀消息
      *
-     * @param count    出道次数
+     * @param count    出刀次数
      * @param damage   伤害
      * @param memberID 成员
      * @return 组织好的字符串
