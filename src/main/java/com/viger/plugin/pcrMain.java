@@ -27,7 +27,9 @@ import java.util.*;
 public class pcrMain extends JavaPlugin {
     public final static pcrMain INSTANCE = new pcrMain();
     public static Group group;
-    static List<String> one, two, three, noUpThree, one_plus, two_plus, three_plus, noUpTwo, noUpOne;
+    static List<Integer> star3, star2, star1, up;
+    static Map<Integer, List<String>> chara;
+    static int up_prob, s3_prob, s2_prob;
     static HashMap<String, String> coolDown;     //抽卡冷却时间
     public final PcrData data = PcrData.INSTANCE; // 配置文件
     public String username;
@@ -43,6 +45,7 @@ public class pcrMain extends JavaPlugin {
     public NewsFeeder feeder; // 新闻订阅器
     public Rank rank;
     public ClanBattle status;
+    public Gashapon gashapon;
     public Connection con;// 数据库链接
 
     public pcrMain() {
@@ -57,16 +60,14 @@ public class pcrMain extends JavaPlugin {
 
     @Override
     public void onEnable() {
-        reloadPluginConfig(data);
-        one = data.getGashpon().getOne();
-        two = data.getGashpon().getTwo();
-        three = data.getGashpon().getThree();
-        noUpThree = data.getGashpon().getNoUpThree();
-        noUpTwo = data.getGashpon().getNoUpTwo();
-        noUpOne = data.getGashpon().getNoUpOne();
-        three_plus = data.getGashpon().getThree_plus();
-        two_plus = data.getGashpon().getTwo_plus();
-        one_plus = data.getGashpon().getOne_plus();
+        s3_prob = data.getGashpon().getS3_prob();
+        s2_prob = data.getGashpon().getS2_prob();
+        up_prob = data.getGashpon().getUp_prob();
+        star3 = data.getGashpon().getStar3();
+        star2 = data.getGashpon().getStar2();
+        star1 = data.getGashpon().getStar1();
+        chara = data.getGashpon().getChara();
+        up = data.getGashpon().getUp();
         memberList = data.getMemberList();
         username = data.getDataBase().getDBUserName();
         password = data.getDataBase().getDBPassword();
@@ -81,6 +82,7 @@ public class pcrMain extends JavaPlugin {
             this.feeder = NewsFeeder.INSTANCE;
             this.rank = Rank.INSTANCE;
             this.status = ClanBattle.INSTANCE;
+            this.gashapon = Gashapon.INSTANCE;
             rank.add("L.S.P.");
         }); //延时初始化
         if (!username.equals("username")) {
@@ -103,20 +105,21 @@ public class pcrMain extends JavaPlugin {
                     this.getLogger().error(e);
                 }
             }
-            this.getLogger().debug("checking time");
             if ((Calendar.getInstance().get(Calendar.HOUR_OF_DAY) == 6 ||
                     Calendar.getInstance().get(Calendar.HOUR_OF_DAY) == 0 ||
                     Calendar.getInstance().get(Calendar.HOUR_OF_DAY) == 12 ||
                     Calendar.getInstance().get(Calendar.HOUR_OF_DAY) == 18) &&
-                    Calendar.getInstance().get(Calendar.MINUTE) == 0 &&
-                    ReminderSwitch) {
-                if (imgReminder == null) {
-                    imgReminder = group.uploadImage(new File("./config/xyz.viger.pcrplugin/reminder.jpg"));
+                    Calendar.getInstance().get(Calendar.MINUTE) == 0) {
+                if (ReminderSwitch) {
+                    if (imgReminder == null) {
+                        imgReminder = group.uploadImage(new File("./config/xyz.viger.pcrplugin/reminder.jpg"));
+                    }
+                    group.sendMessage(imgReminder);
                 }
-                group.sendMessage(imgReminder);
+                gashapon.update();
             }
             this.getLogger().debug("checking time");
-        })); // 使用最笨的方法实现自动查刀, 买药提醒
+        })); // 使用最笨的方法实现自动查刀, 买药提醒, 卡池更新
 
         getScheduler().delayed(5000, () -> getScheduler().repeating(600000, () -> {
             try {
@@ -161,6 +164,7 @@ public class pcrMain extends JavaPlugin {
         Events.registerEvents(StatusListener.INSTANCE);
 
         CommandManager.INSTANCE.registerCommand(ClanMemberCommand.INSTANCE, true);
+        CommandManager.INSTANCE.registerCommand(GashaponCommand.INSTANCE, true);
         CommandManager.INSTANCE.register(ClanRecordsCommand.INSTANCE, true);
         CommandManager.INSTANCE.register(RankCommand.INSTANCE, true);
         CommandManager.INSTANCE.register(NewsFeederCommand.INSTANCE, true);
@@ -168,7 +172,7 @@ public class pcrMain extends JavaPlugin {
 
 
         this.getLogger().info("记刀器已就绪");
-    } // 注册监听器们 todo: 模块化
+    } // 注册监听器们
 
 
     /**
