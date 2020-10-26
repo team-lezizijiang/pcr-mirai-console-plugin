@@ -31,6 +31,7 @@ public class ClanListener extends SimpleListenerHost {
     @Override
     public void handleException(@org.jetbrains.annotations.NotNull CoroutineContext context, @org.jetbrains.annotations.NotNull Throwable exception) {
         super.handleException(context, exception);
+        plugin.getLogger().error(exception);
     }
 
     @EventHandler

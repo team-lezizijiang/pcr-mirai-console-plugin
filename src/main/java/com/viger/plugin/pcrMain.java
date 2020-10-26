@@ -96,10 +96,12 @@ public class pcrMain extends JavaPlugin {
 
 
         getScheduler().delayed(5000, () -> getScheduler().repeating(60000, () -> {
-            try {
-                status.update();
-            } catch (Exception e) {
-                this.getLogger().error(e);
+            if (enabled) {
+                try {
+                    status.update();
+                } catch (Exception e) {
+                    this.getLogger().error(e);
+                }
             }
             this.getLogger().debug("checking time");
             if ((Calendar.getInstance().get(Calendar.HOUR_OF_DAY) == 6 ||
