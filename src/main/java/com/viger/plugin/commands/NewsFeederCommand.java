@@ -16,6 +16,7 @@ public class NewsFeederCommand extends JCompositeCommand {
 
     public NewsFeederCommand() {
         super(pcrMain.INSTANCE, "feeder", "switch");
+        setDescription("切换自动新闻推送开关");
     }
 
     @SubCommand(value = "switch")

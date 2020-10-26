@@ -16,6 +16,7 @@ public class RankCommand extends JCompositeCommand {
 
     public RankCommand() {
         super(pcrMain.INSTANCE, "rank", "switch");
+        setDescription("切换自动排名开关");
     }
 
     @SubCommand(value = "switch")
