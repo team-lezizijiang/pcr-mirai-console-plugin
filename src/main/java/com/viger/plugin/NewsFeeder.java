@@ -3,6 +3,7 @@ package com.viger.plugin;
 import net.mamoe.mirai.contact.Contact;
 import net.mamoe.mirai.message.data.Image;
 import net.mamoe.mirai.message.data.Message;
+import net.mamoe.mirai.message.data.MessageChain;
 import net.mamoe.mirai.message.data.MessageChainBuilder;
 import org.jetbrains.annotations.NotNull;
 import org.w3c.dom.Document;
@@ -13,6 +14,8 @@ import org.xml.sax.SAXException;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.LinkedList;
@@ -20,9 +23,12 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class NewsFeeder {
-    public static final NewsFeeder INSTANCE = new NewsFeeder(); // 单例化
-    Feed last; // 上一次更新内容
-    private String timestamp; // 最后一篇已读文章的时间戳
+    public static final NewsFeeder INSTANCE = new NewsFeeder();
+    final Pattern IMG_PATTERN = Pattern.compile(
+            "<img.*?src=\"(.*?)\".*?>",
+            Pattern.CASE_INSENSITIVE);
+    Feed last;
+    private String timestamp;
 
 
     private NewsFeeder() {
@@ -42,7 +48,7 @@ public class NewsFeeder {
         Feed feed = null;
         Element root;
         try {
-            String url = "https://rsshub.viger.xyz/bilibili/user/dynamic/353840826";
+            String url = "https://rsshub.viger.xyz/bilibili/user/dynamic/401742377";
             doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(url);
             String title, link, description, language, guid, pubdate;
             root = ((Element) ((Element) doc.getElementsByTagName("rss").item(0))
@@ -51,7 +57,7 @@ public class NewsFeeder {
             link = root.getElementsByTagName("link").item(0).getTextContent();
             language = root.getElementsByTagName("language").item(0).getTextContent();
             description = root.getElementsByTagName("description").item(0).getTextContent();
-            feed = new Feed(title, link, description, language); // rss解析成feed类
+            feed = new Feed(title, link, description, language);
 
 
             NodeList feedsList = root.getElementsByTagName("item");
@@ -94,7 +100,7 @@ public class NewsFeeder {
      * @return 最近一条文章
      * @throws MalformedURLException .
      */
-    public Message last(Contact contact) throws MalformedURLException {
+    public Message last(Contact contact) throws IOException {
         MessageChainBuilder message;
         FeedMessage feed = last.getMessages().get(0);
         message = getSingleMessages(contact, feed);
@@ -108,11 +114,9 @@ public class NewsFeeder {
      * @param contact 要发送的对象
      * @return 未读文章消息化
      */
-    LinkedList<Message> fetch(Contact contact) throws MalformedURLException {
-        LinkedList<Message> result = new LinkedList<>();
+    LinkedList<MessageChain> fetch(Contact contact) throws IOException {
+        LinkedList<MessageChain> result = new LinkedList<>();
         MessageChainBuilder message;
-        LinkedList<Image> img;
-        String text;
         for (FeedMessage feed : last.getMessages()) {
             if (Long.parseLong(feed.getGuid()) <= Long.parseLong(timestamp)) {
                 break;
@@ -132,18 +136,24 @@ public class NewsFeeder {
      * @throws MalformedURLException .
      */
     @NotNull
-    private MessageChainBuilder getSingleMessages(Contact contact, FeedMessage feed) throws MalformedURLException {
+    private MessageChainBuilder getSingleMessages(Contact contact, FeedMessage feed) throws IOException {
         MessageChainBuilder message;
         String text;
         LinkedList<Image> img;
         message = new MessageChainBuilder();
         message.add("国服动态更新:\n");
         text = feed.getDescription();
-        text.replaceAll("<img.*?src=\"(.*?)\".*?>", "&flagImg");
         img = getImage(feed.getDescription(), contact);
+        text = text.replaceAll("<img.*?src=\".*?\".*?>", "&flagImg");
         text = text.replaceAll("<br>", "\n");
         text = text.replaceAll("<.*>", "");
-        message.add(text);
+        if (!img.isEmpty()) {
+            for (String s : text.split("&flagImg")) {
+                message.add(s);
+                message.add(img.pop());
+            }
+        }
+
         message.addAll(img);
         message.add(feed.getLink());
         return message;
@@ -153,14 +163,15 @@ public class NewsFeeder {
      * @param description 动态的html文本
      * @return 动态中的图片
      */
-    private LinkedList<Image> getImage(String description, Contact contact) throws MalformedURLException {
+    private LinkedList<Image> getImage(String description, Contact contact) throws IOException {
         LinkedList<Image> img = new LinkedList<>();
-        Pattern IMG_PATTERN = Pattern.compile(
-                "<img.*?src=\"(.*?)\".*?>",
-                Pattern.CASE_INSENSITIVE);
         Matcher IMG_MATCHER = IMG_PATTERN.matcher(description);
         while (IMG_MATCHER.find()) {
-            img.add(contact.uploadImage(new URL(IMG_MATCHER.group(1))));
+            HttpURLConnection conn = (HttpURLConnection) (new URL(IMG_MATCHER.group(1))).openConnection();
+            conn.setRequestMethod("GET");
+            conn.setRequestProperty("User-agent", "Mozilla/4.0");
+            InputStream inStream = conn.getInputStream();
+            img.add(Contact.uploadImage(contact, inStream));
         }
         return img;
     }

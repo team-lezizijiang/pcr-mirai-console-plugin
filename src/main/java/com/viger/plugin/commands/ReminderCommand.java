@@ -2,13 +2,9 @@ package com.viger.plugin.commands;
 
 
 import com.viger.plugin.pcrMain;
-import kotlin.Unit;
-import kotlin.coroutines.Continuation;
 import net.mamoe.mirai.console.command.CommandSender;
 import net.mamoe.mirai.console.command.java.JCompositeCommand;
-import net.mamoe.mirai.message.data.MessageChain;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 
@@ -27,7 +23,7 @@ public class ReminderCommand extends JCompositeCommand {
         if (!plugin.ReminderSwitch) {
             plugin.ReminderSwitch = true;
             try {
-                plugin.imgReminder = pcrMain.group.uploadImage(new File("./config/xyz.viger.pcrplugin/reminder.jpg"));
+                plugin.imgReminder = net.mamoe.mirai.contact.Contact.uploadImage(pcrMain.group, new File("./config/xyz.viger.pcrplugin/reminder.jpg"));
                 pcrMain.group.sendMessage(plugin.imgReminder);
                 commandSender.sendMessage(" 开启成功 ");
                 plugin.getLogger().info("reminder on");
@@ -41,12 +37,6 @@ public class ReminderCommand extends JCompositeCommand {
             commandSender.sendMessage("关闭成功");
             plugin.getLogger().info("reminder off");
         }
-    }
-
-    @Nullable
-    @Override
-    public Object onDefault(@NotNull CommandSender commandSender, @NotNull MessageChain messageChain, @NotNull Continuation<? super Unit> continuation) {
-        return super.onDefault(commandSender, messageChain, continuation);
     }
 
 }

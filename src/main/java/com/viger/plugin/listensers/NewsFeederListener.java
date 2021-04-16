@@ -4,9 +4,10 @@ import com.viger.plugin.pcrMain;
 import kotlin.coroutines.CoroutineContext;
 import net.mamoe.mirai.event.EventHandler;
 import net.mamoe.mirai.event.SimpleListenerHost;
-import net.mamoe.mirai.message.GroupMessageEvent;
+import net.mamoe.mirai.event.events.GroupMessageEvent;
 import org.jetbrains.annotations.NotNull;
 
+import java.io.IOException;
 import java.net.MalformedURLException;
 
 public class NewsFeederListener extends SimpleListenerHost {
@@ -26,6 +27,8 @@ public class NewsFeederListener extends SimpleListenerHost {
                 event.getSubject().sendMessage(plugin.feeder.last(pcrMain.group));
             } catch (MalformedURLException e) {
                 plugin.getLogger().error(e);
+            } catch (IOException e) {
+                e.printStackTrace();
             }
         }
     } // 手动看新闻

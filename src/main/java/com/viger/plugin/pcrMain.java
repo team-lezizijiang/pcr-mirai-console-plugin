@@ -1,23 +1,24 @@
 package com.viger.plugin;
 
-import com.viger.plugin.commands.*;
-import com.viger.plugin.listensers.*;
+import com.viger.plugin.commands.GashaponCommand;
+import com.viger.plugin.commands.NewsFeederCommand;
+import com.viger.plugin.commands.ReminderCommand;
+import com.viger.plugin.listensers.GashaponListener;
+import com.viger.plugin.listensers.NewsFeederListener;
 import net.mamoe.mirai.Bot;
 import net.mamoe.mirai.console.command.CommandManager;
 import net.mamoe.mirai.console.extension.PluginComponentStorage;
 import net.mamoe.mirai.console.plugin.jvm.JavaPlugin;
 import net.mamoe.mirai.console.plugin.jvm.JvmPluginDescriptionBuilder;
+import net.mamoe.mirai.contact.Contact;
 import net.mamoe.mirai.contact.Group;
 import net.mamoe.mirai.contact.Member;
-import net.mamoe.mirai.event.Events;
 import net.mamoe.mirai.message.data.Image;
-import net.mamoe.mirai.message.data.Message;
-import net.mamoe.mirai.message.data.MessageChainBuilder;
+import net.mamoe.mirai.message.data.MessageChain;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.util.*;
 
 
@@ -43,8 +44,6 @@ public class pcrMain extends JavaPlugin {
     public boolean rankSwitch; // 会战排名开关
     public Image imgReminder; // 小助手资源
     public NewsFeeder feeder; // 新闻订阅器
-    public Rank rank;
-    public ClanBattle status;
     public Gashapon gashapon;
     public Connection con;// 数据库链接
 
@@ -78,33 +77,16 @@ public class pcrMain extends JavaPlugin {
         this.rankSwitch = data.getRankSwitch();
         this.feederSwitch = data.getFeederSwitch();
         Objects.requireNonNull(getScheduler()).delayed(4000, () -> {
-            group = Bot.getBotInstances().get(0).getGroup(groupID);
+            Bot bot = Bot.getInstances().get(0);
+            group = bot.getGroup(1091221719L);
             this.feeder = NewsFeeder.INSTANCE;
-            this.rank = Rank.INSTANCE;
-            this.status = ClanBattle.INSTANCE;
             this.gashapon = Gashapon.INSTANCE;
-            rank.add("L.S.P.");
+            bot.getEventChannel().registerListenerHost(GashaponListener.INSTANCE);
+            bot.getEventChannel().registerListenerHost(NewsFeederListener.INSTANCE);
         }); //延时初始化
-        if (!username.equals("username")) {
-            try {
-                Class.forName("com.mysql.jdbc.Driver");
-                con = DriverManager.getConnection("jdbc:mysql://127.0.0.1:3306/pcr", username, password);
-                con.close();
-            } catch (Exception e) {
-                this.getLogger().error(e);
-                this.getLogger().error("请在settings.yaml中设置您的mysql账号及密码!");
-            }// 初始化数据库连接
-        }
 
 
         getScheduler().delayed(5000, () -> getScheduler().repeating(60000, () -> {
-            if (enabled) {
-                try {
-                    status.update();
-                } catch (Exception e) {
-                    this.getLogger().error(e);
-                }
-            }
             if ((Calendar.getInstance().get(Calendar.HOUR_OF_DAY) == 6 ||
                     Calendar.getInstance().get(Calendar.HOUR_OF_DAY) == 0 ||
                     Calendar.getInstance().get(Calendar.HOUR_OF_DAY) == 12 ||
@@ -112,7 +94,7 @@ public class pcrMain extends JavaPlugin {
                     Calendar.getInstance().get(Calendar.MINUTE) == 0) {
                 if (ReminderSwitch) {
                     if (imgReminder == null) {
-                        imgReminder = group.uploadImage(new File("./config/xyz.viger.pcrplugin/reminder.jpg"));
+                        imgReminder = Contact.uploadImage(group, new File("./config/xyz.viger.pcrplugin/reminder.jpg"));
                     }
                     group.sendMessage(imgReminder);
                 }
@@ -123,14 +105,10 @@ public class pcrMain extends JavaPlugin {
 
         getScheduler().delayed(5000, () -> getScheduler().repeating(600000, () -> {
             try {
-                if (rankSwitch) {
-                    rank.update();
-                }
-
                 if (feeder.unread() && feederSwitch) {
                     getLogger().debug("检查到更新");
-                    for (Message msg : feeder.fetch(group)) {
-                        group.sendMessage(msg);
+                    for (MessageChain msg : feeder.fetch(group)) {
+                        group.sendMessage(msg.contentToString());
                         getLogger().debug(msg.contentToString());
                     }
                 }
@@ -140,35 +118,9 @@ public class pcrMain extends JavaPlugin {
             }
         }));
 
-        getScheduler().delayed(5000, () -> getScheduler().repeating(1800000, () -> {
-            if (rankSwitch) {
-                MessageChainBuilder builder = new MessageChainBuilder();
-                try {
-                    rank.update();
-                    for (String clanname :
-                            rank.clanName.keySet()) {
-                        builder.add(rank.query(clanname));
-                    }
-                    this.getLogger().debug("检查排名更新");
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-                group.sendMessage(builder.asMessageChain());
-            }
-        }));
-
-        Events.registerEvents(ClanListener.INSTANCE);
-        Events.registerEvents(GashaponListener.INSTANCE);
-        Events.registerEvents(NewsFeederListener.INSTANCE);
-        Events.registerEvents(RankListener.INSTANCE);
-        Events.registerEvents(StatusListener.INSTANCE);
-
-        CommandManager.INSTANCE.registerCommand(ClanMemberCommand.INSTANCE, true);
         CommandManager.INSTANCE.registerCommand(GashaponCommand.INSTANCE, true);
-        CommandManager.INSTANCE.register(ClanRecordsCommand.INSTANCE, true);
-        CommandManager.INSTANCE.register(RankCommand.INSTANCE, true);
-        CommandManager.INSTANCE.register(NewsFeederCommand.INSTANCE, true);
-        CommandManager.INSTANCE.register(ReminderCommand.INSTANCE, true);
+        CommandManager.INSTANCE.registerCommand(NewsFeederCommand.INSTANCE, true);
+        CommandManager.INSTANCE.registerCommand(ReminderCommand.INSTANCE, true);
 
 
         this.getLogger().info("记刀器已就绪");
@@ -182,7 +134,7 @@ public class pcrMain extends JavaPlugin {
      * @return 成员群名片, 为空时返回昵称
      */
     public String getNameCard(Member temp) {
-        return (temp.getNameCard().equals("") ? temp.getNick() : temp.getNameCard());
+        return ("".equals(temp.getNameCard()) ? temp.getNick() : temp.getNameCard());
     }
 
 
