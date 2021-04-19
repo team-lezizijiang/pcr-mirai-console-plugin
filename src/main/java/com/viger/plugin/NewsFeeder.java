@@ -150,7 +150,9 @@ public class NewsFeeder {
         MessageChainBuilder message = new MessageChainBuilder();
         feeds.forEach((String url, Feed feed) -> {
             try {
+                message.add(feed.title + "更新:\n");
                 message.add(getSingleMessages(contact, feed.getMessages().get(0)).asMessageChain());
+                message.add("/n/n");
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -174,6 +176,7 @@ public class NewsFeeder {
                     break;
                 } else {
                     try {
+                        message.add(last.title + "更新:\n");
                         message = getSingleMessages(contact, feed);
                         message.add("/n/n");
                     } catch (IOException e) {
@@ -199,7 +202,6 @@ public class NewsFeeder {
         String text;
         LinkedList<Image> img;
         message = new MessageChainBuilder();
-        message.add("国服动态更新:\n");
         text = feed.getDescription();
         img = getImage(feed.getDescription(), contact);
         text = text.replaceAll("<img.*?src=\".*?\".*?>", "&flagImg");
