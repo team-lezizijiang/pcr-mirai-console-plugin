@@ -38,6 +38,10 @@ public class Feed {
         return language;
     }
 
+    public String getGuid() {
+        return entries.get(0).getGuid();
+    }
+
 
     @Override
     public String toString() {

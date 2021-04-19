@@ -22,7 +22,8 @@ public class NewsFeederListener extends SimpleListenerHost {
 
     @EventHandler
     public void onMessage(@NotNull GroupMessageEvent event) {
-        if (event.getMessage().contentToString().equals("新闻")) {
+        String content = event.getMessage().contentToString();
+        if ("新闻".equals(content)) {
             try {
                 event.getSubject().sendMessage(plugin.feeder.last(pcrMain.group));
             } catch (MalformedURLException e) {
@@ -30,6 +31,10 @@ public class NewsFeederListener extends SimpleListenerHost {
             } catch (IOException e) {
                 e.printStackTrace();
             }
+        } else if (content.startsWith("订阅 ")) {
+            String title = plugin.feeder.subscribe(content.replace("订阅 ", ""));
+            plugin.getLogger().info("订阅" + title);
+            event.getSender().sendMessage("订阅" + title);
         }
     } // 手动看新闻
 }

@@ -18,37 +18,98 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class NewsFeeder {
-    public static final NewsFeeder INSTANCE = new NewsFeeder();
+    volatile static NewsFeeder INSTANCE = new NewsFeeder();
     final Pattern IMG_PATTERN = Pattern.compile(
             "<img.*?src=\"(.*?)\".*?>",
             Pattern.CASE_INSENSITIVE);
-    Feed last;
-    private String timestamp;
+    final HashMap<String, Feed> feeds;
+    final HashMap<String, String> timestamp;
 
 
     private NewsFeeder() {
-        super();
-        last = null;
-        timestamp = "0";
+        this.feeds = new HashMap<>();
+        this.timestamp = new HashMap<>();
+        subscribe("https://rsshub.viger.xyz/bilibili/user/dynamic/401742377");
     }
 
+    public static NewsFeeder getInstance() {
+        if (INSTANCE == null) {
+            synchronized (NewsFeeder.class) {
+                if (INSTANCE == null) {
+                    INSTANCE = new NewsFeeder();
+                }
+            }
+        }
+        return INSTANCE;
+    }
+
+
+    /**
+     * 添加rss到订阅
+     *
+     * @param url 订阅地址
+     */
+    public String subscribe(String url) {
+        try {
+            feeds.put(url, getFeed(url));
+            timestamp.put(url, feeds.get(url).getGuid());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return feeds.get(url).title;
+    }
 
     /**
      * 检查是否有未读文章
      *
      * @return 是否有未读文章
      */
-    boolean unread() throws IOException {
+    boolean unread() {
+        AtomicReference<Integer> count = new AtomicReference<>(0);
+        feeds.forEach((String url, Feed last) -> {
+            Feed feed = null;
+            try {
+                feed = getFeed(url);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            if (last == null) {
+                if (feed != null) {
+                    feed.getMessages().removeAll(feed.getMessages().subList(1, feed.getMessages().size()));
+                    System.out.print(feed.getTitle() + "\n无更新内容");
+                    feeds.put(url, feed);
+                }
+            } else if (feed != null && feed.getGuid().equals(last.getGuid())) {
+                System.out.print(feed.getTitle() + "\n无更新内容");
+            } else {
+                feeds.put(url, feed);
+                System.out.print(feed.getMessages().get(0) + "\n检查到更新");
+                count.getAndSet(count.get() + 1);
+            } // 检查是否有更新});
+        });
+        return count.get() != 0;
+    }
+
+
+    /**
+     * 更新地址
+     *
+     * @param url 订阅地址
+     * @return Feed对象
+     * @throws IOException
+     */
+    Feed getFeed(String url) throws IOException {
         Document doc;
         Feed feed = null;
         Element root;
         try {
-            String url = "https://rsshub.viger.xyz/bilibili/user/dynamic/401742377";
             doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(url);
             String title, link, description, language, guid, pubdate;
             root = ((Element) ((Element) doc.getElementsByTagName("rss").item(0))
@@ -77,22 +138,7 @@ public class NewsFeeder {
         } catch (SAXException | ParserConfigurationException e) {
             e.printStackTrace();
         }
-        if (last == null) {
-            if (feed != null) {
-                feed.getMessages().removeAll(feed.getMessages().subList(1, feed.getMessages().size()));
-                System.out.print(feed.getMessages().size() + "\n无更新内容");
-                last = feed;
-                timestamp = last.getMessages().get(0).getGuid();
-            }
-            return false;
-        } else if (feed != null && feed.getMessages().get(0).guid.equals(timestamp)) {
-            System.out.print(feed.getMessages().get(0) + "\n无更新内容");
-            return false;
-        } else {
-            last = feed;
-            System.out.print(feed.getMessages().get(0) + "\n检查到更新");
-            return true;
-        } // 检查是否有更新
+        return feed;
     }
 
     /**
@@ -101,10 +147,15 @@ public class NewsFeeder {
      * @throws MalformedURLException .
      */
     public Message last(Contact contact) throws IOException {
-        MessageChainBuilder message;
-        FeedMessage feed = last.getMessages().get(0);
-        message = getSingleMessages(contact, feed);
-        timestamp = last.getMessages().get(0).getGuid();
+        MessageChainBuilder message = new MessageChainBuilder();
+        feeds.forEach((String url, Feed feed) -> {
+            try {
+                message.add(getSingleMessages(contact, feed.getMessages().get(0)).asMessageChain());
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            timestamp.put(url, feed.getMessages().get(0).getGuid());
+        });
         return message.asMessageChain();
     }
 
@@ -115,17 +166,24 @@ public class NewsFeeder {
      * @return 未读文章消息化
      */
     LinkedList<MessageChain> fetch(Contact contact) throws IOException {
-        LinkedList<MessageChain> result = new LinkedList<>();
-        MessageChainBuilder message;
-        for (FeedMessage feed : last.getMessages()) {
-            if (Long.parseLong(feed.getGuid()) <= Long.parseLong(timestamp)) {
-                break;
-            } else {
-                message = getSingleMessages(contact, feed);
-                result.add(message.asMessageChain());
+        final LinkedList<MessageChain> result = new LinkedList<>();
+        feeds.forEach((String url, Feed last) -> {
+            MessageChainBuilder message = new MessageChainBuilder();
+            for (FeedMessage feed : last.getMessages()) {
+                if (Long.parseLong(feed.getGuid()) <= Long.parseLong(timestamp.get(url))) {
+                    break;
+                } else {
+                    try {
+                        message = getSingleMessages(contact, feed);
+                        message.add("/n/n");
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                    result.add(message.asMessageChain());
+                }
             }
-        }
-        timestamp = last.getMessages().get(0).getGuid();
+            timestamp.put(url, last.getGuid());
+        });
         return result;
     }
 

@@ -76,17 +76,17 @@ public class pcrMain extends JavaPlugin {
         this.ReminderSwitch = data.getReminderSwitch();
         this.rankSwitch = data.getRankSwitch();
         this.feederSwitch = data.getFeederSwitch();
-        Objects.requireNonNull(getScheduler()).delayed(4000, () -> {
+        getScheduler().delayed(12000, () -> {
             Bot bot = Bot.getInstances().get(0);
-            group = bot.getGroup(1091221719L);
-            this.feeder = NewsFeeder.INSTANCE;
+            group = bot.getGroup(1091221719);
+            this.feeder = NewsFeeder.getInstance();
             this.gashapon = Gashapon.INSTANCE;
             bot.getEventChannel().registerListenerHost(GashaponListener.INSTANCE);
             bot.getEventChannel().registerListenerHost(NewsFeederListener.INSTANCE);
         }); //延时初始化
 
 
-        getScheduler().delayed(5000, () -> getScheduler().repeating(60000, () -> {
+        getScheduler().delayed(12000, () -> getScheduler().repeating(60000, () -> {
             if ((Calendar.getInstance().get(Calendar.HOUR_OF_DAY) == 6 ||
                     Calendar.getInstance().get(Calendar.HOUR_OF_DAY) == 0 ||
                     Calendar.getInstance().get(Calendar.HOUR_OF_DAY) == 12 ||
@@ -103,7 +103,7 @@ public class pcrMain extends JavaPlugin {
             this.getLogger().debug("checking time");
         })); // 使用最笨的方法实现自动查刀, 买药提醒, 卡池更新
 
-        getScheduler().delayed(5000, () -> getScheduler().repeating(600000, () -> {
+        getScheduler().delayed(16000, () -> getScheduler().repeating(600000, () -> {
             try {
                 if (feeder.unread() && feederSwitch) {
                     getLogger().debug("检查到更新");
@@ -139,5 +139,3 @@ public class pcrMain extends JavaPlugin {
 
 
 }
-// todo: 使用excel或网页展示统计数据
-// todo: 多群支持
