@@ -14,7 +14,7 @@ import net.mamoe.mirai.contact.Contact;
 import net.mamoe.mirai.contact.Group;
 import net.mamoe.mirai.contact.Member;
 import net.mamoe.mirai.message.data.Image;
-import net.mamoe.mirai.message.data.MessageChain;
+import net.mamoe.mirai.message.data.Message;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
@@ -45,6 +45,7 @@ public class pcrMain extends JavaPlugin {
     public Image imgReminder; // 小助手资源
     public NewsFeeder feeder; // 新闻订阅器
     public Gashapon gashapon;
+    public List<String> rss;
     public Connection con;// 数据库链接
 
     public pcrMain() {
@@ -66,6 +67,7 @@ public class pcrMain extends JavaPlugin {
         star2 = data.getGashpon().getStar2();
         star1 = data.getGashpon().getStar1();
         chara = data.getGashpon().getChara();
+        rss = data.getRss();
         up = data.getGashpon().getUp();
         memberList = data.getMemberList();
         username = data.getDataBase().getDBUserName();
@@ -81,6 +83,9 @@ public class pcrMain extends JavaPlugin {
             group = bot.getGroup(1091221719);
             this.feeder = NewsFeeder.getInstance();
             this.gashapon = Gashapon.INSTANCE;
+            for (String url : rss) {
+                feeder.subscribe(url);
+            }
             bot.getEventChannel().registerListenerHost(GashaponListener.INSTANCE);
             bot.getEventChannel().registerListenerHost(NewsFeederListener.INSTANCE);
         }); //延时初始化
@@ -107,9 +112,9 @@ public class pcrMain extends JavaPlugin {
             try {
                 if (feeder.unread() && feederSwitch) {
                     getLogger().debug("检查到更新");
-                    for (MessageChain msg : feeder.fetch(group)) {
-                        group.sendMessage(msg.contentToString());
-                        getLogger().debug(msg.contentToString());
+                    for (Message msg : feeder.fetch(group)) {
+                        group.sendMessage(msg);
+                        getLogger().debug(msg.toString());
                     }
                 }
                 this.getLogger().debug("检查动态更新");

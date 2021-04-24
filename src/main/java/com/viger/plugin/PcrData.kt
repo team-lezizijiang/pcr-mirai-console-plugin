@@ -13,6 +13,11 @@ object PcrData : AutoSavePluginConfig("Pcr") {
     val feederSwitch: Boolean by value(true)
     val gashpon: Gashpon by value()
     val dataBase: DataBase by value()
+    val rss: List<String> by value(
+        mutableListOf(
+            "https://rsshub.viger.xyz/bilibili/user/dynamic/401742377"
+        )
+    )
     val memberList: Set<Long> by value<Set<Long>>(HashSet<Long>())// 写入默认值
 
 }

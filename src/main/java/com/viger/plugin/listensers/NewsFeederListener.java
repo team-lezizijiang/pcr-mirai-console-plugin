@@ -34,7 +34,8 @@ public class NewsFeederListener extends SimpleListenerHost {
         } else if (content.startsWith("订阅 ")) {
             String title = plugin.feeder.subscribe(content.replace("订阅 ", ""));
             plugin.getLogger().info("订阅" + title);
-            event.getSender().sendMessage("订阅" + title);
+            event.getSubject().sendMessage("订阅" + title);
+            plugin.rss.add(content.replace("订阅 ", ""));
         }
     } // 手动看新闻
 }

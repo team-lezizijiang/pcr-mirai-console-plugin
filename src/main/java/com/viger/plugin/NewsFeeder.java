@@ -3,7 +3,6 @@ package com.viger.plugin;
 import net.mamoe.mirai.contact.Contact;
 import net.mamoe.mirai.message.data.Image;
 import net.mamoe.mirai.message.data.Message;
-import net.mamoe.mirai.message.data.MessageChain;
 import net.mamoe.mirai.message.data.MessageChainBuilder;
 import org.jetbrains.annotations.NotNull;
 import org.w3c.dom.Document;
@@ -36,7 +35,6 @@ public class NewsFeeder {
     private NewsFeeder() {
         this.feeds = new HashMap<>();
         this.timestamp = new HashMap<>();
-        subscribe("https://rsshub.viger.xyz/bilibili/user/dynamic/401742377");
     }
 
     public static NewsFeeder getInstance() {
@@ -152,7 +150,7 @@ public class NewsFeeder {
             try {
                 message.add(feed.title + "更新:\n");
                 message.add(getSingleMessages(contact, feed.getMessages().get(0)).asMessageChain());
-                message.add("/n/n");
+                message.add("\n\n");
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -167,8 +165,8 @@ public class NewsFeeder {
      * @param contact 要发送的对象
      * @return 未读文章消息化
      */
-    LinkedList<MessageChain> fetch(Contact contact) throws IOException {
-        final LinkedList<MessageChain> result = new LinkedList<>();
+    LinkedList<Message> fetch(Contact contact) throws IOException {
+        final LinkedList<Message> result = new LinkedList<>();
         feeds.forEach((String url, Feed last) -> {
             MessageChainBuilder message = new MessageChainBuilder();
             for (FeedMessage feed : last.getMessages()) {
@@ -177,8 +175,8 @@ public class NewsFeeder {
                 } else {
                     try {
                         message.add(last.title + "更新:\n");
-                        message = getSingleMessages(contact, feed);
-                        message.add("/n/n");
+                        message.add(getSingleMessages(contact, feed).asMessageChain());
+                        message.add("\n\n");
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
